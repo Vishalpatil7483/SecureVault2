@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Forbidden — SecureVault 2.0{% endblock %}
+{% block content %}
+  <h1>403 — Forbidden</h1>
+  <p>You do not have permission to access this resource.</p>
+  <p><a href="{{ url_for('main.index') }}">Return home</a></p>
+{% endblock %}

@@ -1,0 +1,44 @@
+# ---- Byte-compiled / optimized / DLL files ----
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ---- Virtual environments ----
+.venv/
+venv/
+env/
+ENV/
+
+# ---- Environment / secrets ----
+.env
+*.env
+!.env.example
+
+# ---- Flask instance folder (holds local DB, uploaded files, secrets) ----
+instance/
+
+# ---- Databases ----
+*.db
+*.sqlite
+*.sqlite3
+
+# ---- Logs ----
+logs/
+*.log
+
+# ---- Migrations artifacts are usually committed, but keep versions clean ----
+# (Uncomment the next line only if you intentionally do not track migrations)
+# migrations/
+
+# ---- OS / editor cruft ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# ---- Testing / coverage ----
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/

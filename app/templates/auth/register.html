@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Register — SecureVault 2.0{% endblock %}
+{% block content %}
+  <h1>Create an account</h1>
+  <form method="post" action="{{ url_for('auth.register') }}">
+    {{ form.hidden_tag() }}
+
+    <p>
+      {{ form.username.label }}<br>
+      {{ form.username(autocomplete="username") }}
+      {% for error in form.username.errors %}<span class="error">{{ error }}</span>{% endfor %}
+    </p>
+    <p>
+      {{ form.email.label }}<br>
+      {{ form.email(autocomplete="email") }}
+      {% for error in form.email.errors %}<span class="error">{{ error }}</span>{% endfor %}
+    </p>
+    <p>
+      {{ form.password.label }}<br>
+      {{ form.password(autocomplete="new-password") }}
+      {% for error in form.password.errors %}<span class="error">{{ error }}</span>{% endfor %}
+    </p>
+    <p>
+      {{ form.confirm.label }}<br>
+      {{ form.confirm(autocomplete="new-password") }}
+      {% for error in form.confirm.errors %}<span class="error">{{ error }}</span>{% endfor %}
+    </p>
+    <p>{{ form.submit() }}</p>
+  </form>
+  <p>Already registered? <a href="{{ url_for('auth.login') }}">Log in</a>.</p>
+{% endblock %}

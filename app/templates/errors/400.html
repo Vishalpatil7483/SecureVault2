@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Bad request — SecureVault 2.0{% endblock %}
+{% block content %}
+  <h1>400 — Bad request</h1>
+  <p>{{ reason or "Your request could not be processed. Please try again." }}</p>
+  <p><a href="{{ url_for('main.index') }}">Return home</a></p>
+{% endblock %}

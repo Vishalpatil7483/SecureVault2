@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}SecureVault 2.0 — Home{% endblock %}
+{% block content %}
+  <h1>SecureVault 2.0</h1>
+  {% if current_user.is_authenticated %}
+    <p>Welcome back, {{ current_user.username }}.</p>
+  {% else %}
+    <p>A secure file storage application. Please log in or register to continue.</p>
+  {% endif %}
+{% endblock %}
