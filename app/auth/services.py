@@ -7,6 +7,8 @@ which makes them straightforward to unit-test.
 """
 from __future__ import annotations
 
+from sqlalchemy.exc import IntegrityError
+
 from app.auth.models import User
 from app.extensions import db
 
@@ -30,7 +32,16 @@ def register_user(username: str, email: str, password: str) -> User:
     user = User(username=username, email=email)
     user.set_password(password)
     db.session.add(user)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        # A concurrent request registered the same username/email between the
+        # pre-check and commit. The unique constraint is the source of truth;
+        # roll back so the session is reusable and surface a clean error.
+        db.session.rollback()
+        raise RegistrationError(
+            "That username or email is already registered."
+        ) from None
     return user
 
 
