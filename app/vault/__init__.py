@@ -8,7 +8,8 @@ from flask import Blueprint
 
 vault_bp = Blueprint("vault", __name__)
 
-# Import models at the bottom so their SQLAlchemy mappers register when the
-# blueprint package loads (the factory imports this package). Placed here, not
-# at the top, to avoid a circular import. Routes are added in a later batch.
+# Import models and routes at the bottom so the SQLAlchemy mappers register and
+# the route decorators bind to the blueprint when this package loads (the
+# factory imports it). Placed here, not at the top, to avoid a circular import.
 from app.vault import models  # noqa: E402,F401
+from app.vault import routes  # noqa: E402,F401

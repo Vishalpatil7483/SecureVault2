@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — SecureVault 2.0{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center g-4">
+
+  <!-- Upload panel -->
+  <div class="col-12 col-lg-10 col-xl-8">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h1 class="h4 card-title mb-1">Your Vault</h1>
+        <p class="text-muted mb-4">Upload a file to store it securely.</p>
+
+        <form action="{{ url_for('vault.upload') }}" method="post"
+              enctype="multipart/form-data" class="row g-2 align-items-center">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="col-12 col-sm">
+            <label for="file" class="form-label visually-hidden">Choose a file</label>
+            <input class="form-control" type="file" id="file" name="file" required>
+          </div>
+          <div class="col-12 col-sm-auto">
+            <button type="submit" class="btn btn-primary w-100">Upload</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Files list -->
+  <div class="col-12 col-lg-10 col-xl-8">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Uploaded files</span>
+        <span class="badge text-bg-secondary">{{ files|length }}</span>
+      </div>
+
+      {% if files %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th scope="col">Filename</th>
+                <th scope="col" class="text-end">Size</th>
+                <th scope="col">Uploaded</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for file in files %}
+                <tr>
+                  <td class="text-break">{{ file.original_filename }}</td>
+                  <td class="text-end text-nowrap">{{ file.file_size | filesizeformat_iec }}</td>
+                  <td class="text-nowrap">{{ file.upload_timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="card-body text-center text-muted py-5">
+          <p class="mb-0">You haven't uploaded any files yet.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
