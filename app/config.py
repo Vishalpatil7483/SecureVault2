@@ -74,6 +74,26 @@ class BaseConfig:
     RATELIMIT_STORAGE_URI = os.getenv("RATELIMIT_STORAGE_URI", "memory://")
     RATELIMIT_HEADERS_ENABLED = True
 
+    # --- File uploads ------------------------------------------------------
+    # Uploaded files live on disk under the (git-ignored) instance folder and
+    # are never served directly; only their metadata is stored in the database.
+    UPLOAD_DIR = BASE_DIR / "instance" / "uploads"
+
+    # Maximum accepted upload size in bytes (default 16 MB). MAX_CONTENT_LENGTH
+    # lets Flask reject oversized request bodies before they reach the service,
+    # guarding against memory exhaustion; the service enforces the same limit.
+    MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE", str(16 * 1024 * 1024)))
+    MAX_CONTENT_LENGTH = MAX_FILE_SIZE
+
+    # Allowed extensions (lower-case, no leading dot). The whitelist is the
+    # primary control over what may be stored — the on-disk name is randomised.
+    ALLOWED_UPLOAD_EXTENSIONS = {
+        "pdf", "txt", "csv", "md",
+        "png", "jpg", "jpeg", "gif",
+        "doc", "docx", "xls", "xlsx", "ppt", "pptx",
+        "zip",
+    }
+
     # --- Logging -----------------------------------------------------------
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
     LOG_DIR = BASE_DIR / "logs"

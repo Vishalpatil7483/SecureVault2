@@ -32,6 +32,15 @@ class User(UserMixin, db.Model):
         default=lambda: datetime.now(timezone.utc),
     )
 
+    # A user owns many files. Defined via back_populates on File.owner; deleting
+    # a user cascades to their file records (bytes are cleaned up separately).
+    files = db.relationship(
+        "File",
+        back_populates="owner",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
     def set_password(self, password: str) -> None:
         """Hash and store a plaintext password."""
         self.password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
