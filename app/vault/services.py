@@ -16,18 +16,27 @@ Security properties enforced here:
 """
 from __future__ import annotations
 
+import io
 import mimetypes
 import os
 import secrets
 from pathlib import Path
 
-from flask import current_app
+from flask import current_app, has_request_context, request
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 from app.auth.models import User
 from app.extensions import db
-from app.vault.models import File
+from app.vault.crypto import (
+    DecryptionError,
+    EncryptionConfigError,
+    EncryptionError,
+    decrypt_bytes,
+    encrypt_bytes,
+    sha256_hex,
+)
+from app.vault.models import AuditLog, File
 
 # Length of the random token (bytes) used for on-disk filenames. 16 bytes of
 # entropy (32 hex chars) makes collisions effectively impossible.
@@ -54,6 +63,49 @@ class FileAccessError(Exception):
 
 class PhysicalFileMissingError(Exception):
     """Raised when a file's metadata exists but its bytes are gone from disk."""
+
+
+class FileIntegrityError(Exception):
+    """Raised when a downloaded file fails its SHA-256 integrity check."""
+
+
+# Audit actions.
+ACTION_UPLOAD = "upload"
+ACTION_DOWNLOAD = "download"
+ACTION_DELETE = "delete"
+ACTION_RENAME = "rename"
+
+
+def record_audit(
+    action: str,
+    user: User | None,
+    *,
+    file: File | None = None,
+    file_id: int | None = None,
+    filename: str | None = None,
+    detail: str | None = None,
+    success: bool = True,
+) -> None:
+    """Write an audit-log entry. Never raises — auditing must not break the op.
+
+    Committed independently so it captures the outcome even when the caller has
+    already committed its own transaction (e.g. a completed delete).
+    """
+    try:
+        entry = AuditLog(
+            user_id=user.id if user is not None else None,
+            file_id=file_id if file_id is not None else (file.id if file else None),
+            action=action,
+            filename=filename or (file.original_filename if file else None),
+            detail=detail,
+            ip_address=request.remote_addr if has_request_context() else None,
+            success=success,
+        )
+        db.session.add(entry)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("Failed to write audit log action=%s", action)
 
 
 def ensure_upload_dir() -> Path:
@@ -136,14 +188,23 @@ def save_upload(file_storage: FileStorage, user: User) -> File:
 
     _validate(file_storage, extension, size)
 
+    # Read the plaintext into memory (bounded by MAX_FILE_SIZE) and encrypt it
+    # BEFORE touching disk, so plaintext is never persisted unencrypted.
+    plaintext = file_storage.read()
+    try:
+        disk_blob, wrapped_dek, checksum = encrypt_bytes(plaintext)
+    except (EncryptionError, EncryptionConfigError) as exc:
+        current_app.logger.exception("Failed to encrypt upload")
+        raise UploadError("The file could not be encrypted.") from exc
+
     upload_dir = ensure_upload_dir()
     stored_filename = _generate_stored_filename(extension)
     storage_path = upload_dir / stored_filename
 
-    # Write the bytes to disk first so we never persist metadata for a file
-    # that failed to save.
+    # Write the ciphertext to disk first so we never persist metadata for a
+    # file that failed to save.
     try:
-        file_storage.save(str(storage_path))
+        storage_path.write_bytes(disk_blob)
     except OSError as exc:
         current_app.logger.exception("Failed to write uploaded file to disk")
         raise UploadError("The file could not be saved.") from exc
@@ -156,6 +217,9 @@ def save_upload(file_storage: FileStorage, user: User) -> File:
         mime_type=_resolve_mime_type(file_storage, original_filename),
         file_size=size,
         storage_path=str(storage_path),
+        is_encrypted=True,
+        encrypted_key=wrapped_dek,
+        checksum_sha256=checksum,
     )
 
     try:
@@ -169,7 +233,11 @@ def save_upload(file_storage: FileStorage, user: User) -> File:
         raise UploadError("The file could not be saved.") from exc
 
     current_app.logger.info(
-        "Stored upload id=%s user=%s size=%s", record.id, user.id, size
+        "Stored encrypted upload id=%s user=%s size=%s", record.id, user.id, size
+    )
+    record_audit(
+        ACTION_UPLOAD, user, file=record,
+        detail=f"encrypted; sha256={checksum[:16]}…",
     )
     return record
 
@@ -190,25 +258,53 @@ def get_owned_file(file_id: int, user: User) -> File:
     return file
 
 
-def get_download_target(file_id: int, user: User) -> tuple[Path, str]:
-    """Resolve an owned file to its on-disk path and original download name.
+def get_decrypted_file(file_id: int, user: User) -> tuple[io.BytesIO, str, str]:
+    """Resolve, decrypt and integrity-check an owned file for download.
 
     Returns:
-        A ``(storage_path, original_filename)`` tuple.
+        A ``(stream, original_filename, mime_type)`` tuple where ``stream`` is
+        an in-memory plaintext buffer ready to send.
 
     Raises:
         FileAccessError: if the file is missing or not owned by the user.
         PhysicalFileMissingError: if the record exists but the bytes are gone.
+        DecryptionError: if decryption/authentication fails.
+        FileIntegrityError: if the SHA-256 checksum does not match.
     """
     file = get_owned_file(file_id, user)
     storage_path = Path(file.storage_path)
+
     if not storage_path.is_file():
         current_app.logger.error(
             "Missing physical file for id=%s user=%s path=%s",
             file.id, user.id, file.storage_path,
         )
+        record_audit(ACTION_DOWNLOAD, user, file=file, success=False,
+                     detail="file missing on disk")
         raise PhysicalFileMissingError("The stored file is no longer available.")
-    return storage_path, file.original_filename
+
+    disk_blob = storage_path.read_bytes()
+
+    # Decrypt if encrypted; fall back to raw bytes for any legacy plaintext.
+    if file.is_encrypted and file.encrypted_key:
+        try:
+            plaintext = decrypt_bytes(disk_blob, file.encrypted_key)
+        except DecryptionError:
+            record_audit(ACTION_DOWNLOAD, user, file=file, success=False,
+                         detail="decryption failed")
+            raise
+    else:
+        plaintext = disk_blob
+
+    # Independent integrity check against the stored plaintext checksum.
+    if file.checksum_sha256 and sha256_hex(plaintext) != file.checksum_sha256:
+        current_app.logger.error("Checksum mismatch for file id=%s", file.id)
+        record_audit(ACTION_DOWNLOAD, user, file=file, success=False,
+                     detail="checksum mismatch")
+        raise FileIntegrityError("The file failed its integrity check.")
+
+    record_audit(ACTION_DOWNLOAD, user, file=file, detail="integrity verified")
+    return io.BytesIO(plaintext), file.original_filename, file.mime_type
 
 
 def delete_file(file_id: int, user: User) -> str:
@@ -247,6 +343,10 @@ def delete_file(file_id: int, user: User) -> str:
         )
 
     current_app.logger.info("Deleted file id=%s user=%s", file_id, user.id)
+    record_audit(
+        ACTION_DELETE, user, file_id=file_id, filename=original_filename,
+        detail="record and bytes removed",
+    )
     return original_filename
 
 
@@ -259,6 +359,7 @@ def rename_file(file_id: int, user: User, new_name: str) -> File:
         UploadError: if the change could not be persisted.
     """
     file = get_owned_file(file_id, user)
+    previous_name = file.original_filename
 
     # Strip any path components a client might inject; this is a display label,
     # never a filesystem path.
@@ -277,6 +378,10 @@ def rename_file(file_id: int, user: User, new_name: str) -> File:
         raise UploadError("The file could not be renamed.") from exc
 
     current_app.logger.info("Renamed file id=%s user=%s", file_id, user.id)
+    record_audit(
+        ACTION_RENAME, user, file=file,
+        detail=f"'{previous_name}' → '{cleaned}'",
+    )
     return file
 
 

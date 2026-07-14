@@ -94,6 +94,14 @@ class BaseConfig:
         "zip",
     }
 
+    # --- Encryption --------------------------------------------------------
+    # Master key-encryption key (KEK) for AES-256-GCM envelope encryption. Must
+    # decode to exactly 32 bytes (64-char hex, base64 of 32 bytes, or a 32-char
+    # string). Generate one with:
+    #   python -c "import os,base64; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"
+    # Never hard-coded here; dev/testing supply a throwaway fallback below.
+    ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY")
+
     # --- Logging -----------------------------------------------------------
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
     LOG_DIR = BASE_DIR / "logs"
@@ -113,6 +121,9 @@ class DevelopmentConfig(BaseConfig):
     # labelled as insecure; production never inherits this.
     SECRET_KEY = os.getenv("SECRET_KEY") or "dev-insecure-secret-not-for-production"
 
+    # Throwaway 32-byte encryption key for local development only.
+    ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY") or "dev-insecure-encryption-key-0000"
+
 
 class TestingConfig(BaseConfig):
     """Automated tests: in-memory DB, testing hooks enabled."""
@@ -120,6 +131,7 @@ class TestingConfig(BaseConfig):
     ENV_NAME = "testing"
     TESTING = True
     SECRET_KEY = os.getenv("SECRET_KEY") or "testing-insecure-secret"
+    ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY") or "testing-insecure-encryptionkey-0"
     SQLALCHEMY_DATABASE_URI = os.getenv("TEST_DATABASE_URL", "sqlite:///:memory:")
     WTF_CSRF_ENABLED = False  # disabled so tests can POST without a token
     RATELIMIT_ENABLED = False  # disabled so tests are not throttled/flaky
@@ -153,6 +165,14 @@ class ProductionConfig(BaseConfig):
                 f"{cls.MIN_SECRET_KEY_LENGTH} characters "
                 '(e.g. `python -c "import secrets; print(secrets.token_hex(32))"`).'
             )
+
+        # The encryption master key must be present and decode to 32 bytes.
+        from app.vault.crypto import EncryptionConfigError, decode_master_key
+
+        try:
+            decode_master_key(cls.ENCRYPTION_KEY)
+        except EncryptionConfigError as exc:
+            raise RuntimeError(f"Invalid ENCRYPTION_KEY: {exc}") from exc
 
 
 _CONFIG_MAP: dict[str, type[BaseConfig]] = {

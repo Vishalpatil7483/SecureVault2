@@ -19,13 +19,15 @@ from flask import (
 from flask_login import current_user, login_required
 
 from app.vault import vault_bp
+from app.vault.crypto import DecryptionError
 from app.vault.services import (
     FileAccessError,
+    FileIntegrityError,
     FileValidationError,
     PhysicalFileMissingError,
     UploadError,
     delete_file,
-    get_download_target,
+    get_decrypted_file,
     list_files,
     rename_file,
     save_upload,
@@ -78,19 +80,27 @@ def upload():
 @vault_bp.route("/download/<int:file_id>")
 @login_required
 def download(file_id: int):
-    """Stream an owned file back to the user under its original filename."""
+    """Decrypt and stream an owned file under its original filename."""
     try:
-        storage_path, original_filename = get_download_target(file_id, current_user)
+        stream, original_filename, mime_type = get_decrypted_file(
+            file_id, current_user
+        )
     except FileAccessError:
         abort(404)
     except PhysicalFileMissingError:
         flash("The stored file is no longer available.", "danger")
         return redirect(url_for("vault.dashboard"))
+    except (DecryptionError, FileIntegrityError):
+        flash("The file could not be decrypted or failed its integrity check.",
+              "danger")
+        return redirect(url_for("vault.dashboard"))
 
-    # download_name restores the user-facing name; as_attachment forces a
-    # download rather than in-browser rendering.
+    # Stream the in-memory plaintext; as_attachment forces a download.
     return send_file(
-        storage_path, as_attachment=True, download_name=original_filename
+        stream,
+        as_attachment=True,
+        download_name=original_filename,
+        mimetype=mime_type,
     )
 
 
