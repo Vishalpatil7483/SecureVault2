@@ -29,9 +29,20 @@
   <!-- Files list -->
   <div class="col-12 col-lg-10 col-xl-8">
     <div class="card shadow-sm">
-      <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <span class="fw-semibold">Uploaded files</span>
-        <span class="badge text-bg-secondary">{{ files|length }}</span>
+      <div class="card-header bg-white">
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+          <span class="fw-semibold">Uploaded files <span class="badge text-bg-secondary ms-1">{{ files|length }}</span></span>
+
+          <form action="{{ url_for('vault.dashboard') }}" method="get" class="d-flex" role="search">
+            <input class="form-control form-control-sm me-2" type="search" name="q"
+                   value="{{ search_query }}" placeholder="Search filenames"
+                   aria-label="Search filenames">
+            <button class="btn btn-outline-secondary btn-sm" type="submit">Search</button>
+            {% if search_query %}
+              <a class="btn btn-link btn-sm" href="{{ url_for('vault.dashboard') }}">Clear</a>
+            {% endif %}
+          </form>
+        </div>
       </div>
 
       {% if files %}
@@ -42,6 +53,7 @@
                 <th scope="col">Filename</th>
                 <th scope="col" class="text-end">Size</th>
                 <th scope="col">Uploaded</th>
+                <th scope="col" class="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -50,14 +62,74 @@
                   <td class="text-break">{{ file.original_filename }}</td>
                   <td class="text-end text-nowrap">{{ file.file_size | filesizeformat_iec }}</td>
                   <td class="text-nowrap">{{ file.upload_timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                  <td class="text-end text-nowrap">
+                    <a class="btn btn-sm btn-outline-primary"
+                       href="{{ url_for('vault.download', file_id=file.id) }}">Download</a>
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            data-bs-toggle="modal" data-bs-target="#rename-{{ file.id }}">Rename</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger"
+                            data-bs-toggle="modal" data-bs-target="#delete-{{ file.id }}">Delete</button>
+                  </td>
                 </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
+
+        <!-- Per-file modals (placed outside the table for valid markup) -->
+        {% for file in files %}
+          <!-- Rename modal -->
+          <div class="modal fade" id="rename-{{ file.id }}" tabindex="-1"
+               aria-labelledby="rename-label-{{ file.id }}" aria-hidden="true">
+            <div class="modal-dialog">
+              <form class="modal-content" action="{{ url_for('vault.rename', file_id=file.id) }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="rename-label-{{ file.id }}">Rename file</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <label for="new-name-{{ file.id }}" class="form-label">New filename</label>
+                  <input type="text" class="form-control" id="new-name-{{ file.id }}"
+                         name="new_name" value="{{ file.original_filename }}" maxlength="255" required>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                  <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Delete confirmation modal -->
+          <div class="modal fade" id="delete-{{ file.id }}" tabindex="-1"
+               aria-labelledby="delete-label-{{ file.id }}" aria-hidden="true">
+            <div class="modal-dialog">
+              <form class="modal-content" action="{{ url_for('vault.delete', file_id=file.id) }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="delete-label-{{ file.id }}">Delete file</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  Delete <strong class="text-break">{{ file.original_filename }}</strong>? This cannot be undone.
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                  <button type="submit" class="btn btn-danger">Delete</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+
       {% else %}
         <div class="card-body text-center text-muted py-5">
-          <p class="mb-0">You haven't uploaded any files yet.</p>
+          {% if search_query %}
+            <p class="mb-0">No files match &ldquo;{{ search_query }}&rdquo;.</p>
+          {% else %}
+            <p class="mb-0">You haven't uploaded any files yet.</p>
+          {% endif %}
         </div>
       {% endif %}
     </div>

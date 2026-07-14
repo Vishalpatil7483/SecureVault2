@@ -7,12 +7,29 @@ All access requires an authenticated user.
 """
 from __future__ import annotations
 
-from flask import flash, redirect, render_template, request, url_for
+from flask import (
+    abort,
+    flash,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    url_for,
+)
 from flask_login import current_user, login_required
 
 from app.vault import vault_bp
-from app.vault.models import File
-from app.vault.services import FileValidationError, UploadError, save_upload
+from app.vault.services import (
+    FileAccessError,
+    FileValidationError,
+    PhysicalFileMissingError,
+    UploadError,
+    delete_file,
+    get_download_target,
+    list_files,
+    rename_file,
+    save_upload,
+)
 
 
 @vault_bp.app_template_filter("filesizeformat_iec")
@@ -29,13 +46,12 @@ def filesizeformat_iec(num_bytes: int) -> str:
 @vault_bp.route("/dashboard")
 @login_required
 def dashboard():
-    """Show the current user's files and the upload form."""
-    files = (
-        File.query.filter_by(user_id=current_user.id)
-        .order_by(File.upload_timestamp.desc())
-        .all()
+    """Show the current user's files, the upload form, and search results."""
+    search_query = request.args.get("q", "").strip()
+    files = list_files(current_user, search_query)
+    return render_template(
+        "vault/dashboard.html", files=files, search_query=search_query
     )
-    return render_template("vault/dashboard.html", files=files)
 
 
 @vault_bp.route("/upload", methods=["POST"])
@@ -55,5 +71,59 @@ def upload():
         flash(str(exc), "danger")
     else:
         flash(f"'{record.original_filename}' uploaded successfully.", "success")
+
+    return redirect(url_for("vault.dashboard"))
+
+
+@vault_bp.route("/download/<int:file_id>")
+@login_required
+def download(file_id: int):
+    """Stream an owned file back to the user under its original filename."""
+    try:
+        storage_path, original_filename = get_download_target(file_id, current_user)
+    except FileAccessError:
+        abort(404)
+    except PhysicalFileMissingError:
+        flash("The stored file is no longer available.", "danger")
+        return redirect(url_for("vault.dashboard"))
+
+    # download_name restores the user-facing name; as_attachment forces a
+    # download rather than in-browser rendering.
+    return send_file(
+        storage_path, as_attachment=True, download_name=original_filename
+    )
+
+
+@vault_bp.route("/delete/<int:file_id>", methods=["POST"])
+@login_required
+def delete(file_id: int):
+    """Delete an owned file (metadata + bytes on disk)."""
+    try:
+        original_filename = delete_file(file_id, current_user)
+    except FileAccessError:
+        abort(404)
+    except UploadError as exc:
+        flash(str(exc), "danger")
+    else:
+        flash(f"'{original_filename}' was deleted.", "success")
+
+    return redirect(url_for("vault.dashboard"))
+
+
+@vault_bp.route("/rename/<int:file_id>", methods=["POST"])
+@login_required
+def rename(file_id: int):
+    """Rename an owned file's display name only."""
+    new_name = request.form.get("new_name", "")
+    try:
+        record = rename_file(file_id, current_user, new_name)
+    except FileAccessError:
+        abort(404)
+    except FileValidationError as exc:
+        flash(str(exc), "danger")
+    except UploadError as exc:
+        flash(str(exc), "danger")
+    else:
+        flash(f"Renamed to '{record.original_filename}'.", "success")
 
     return redirect(url_for("vault.dashboard"))

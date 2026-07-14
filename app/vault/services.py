@@ -44,6 +44,18 @@ class FileValidationError(UploadError):
     """Raised when an uploaded file fails validation (type, size, emptiness)."""
 
 
+class FileAccessError(Exception):
+    """Raised when a requested file does not exist or is not owned by the user.
+
+    A single error for both "missing" and "not yours" deliberately avoids
+    leaking whether another user's file id exists (no resource enumeration).
+    """
+
+
+class PhysicalFileMissingError(Exception):
+    """Raised when a file's metadata exists but its bytes are gone from disk."""
+
+
 def ensure_upload_dir() -> Path:
     """Return the uploads directory, creating it if necessary."""
     upload_dir: Path = current_app.config["UPLOAD_DIR"]
@@ -160,3 +172,124 @@ def save_upload(file_storage: FileStorage, user: User) -> File:
         "Stored upload id=%s user=%s size=%s", record.id, user.id, size
     )
     return record
+
+
+# Maximum length accepted for a (renamed) display filename.
+_MAX_DISPLAY_NAME_LENGTH = 255
+
+
+def get_owned_file(file_id: int, user: User) -> File:
+    """Return the user's file by id, or raise FileAccessError.
+
+    Scoping the query by ``user_id`` is the authorization boundary: a file that
+    belongs to someone else is indistinguishable from one that doesn't exist.
+    """
+    file = File.query.filter_by(id=file_id, user_id=user.id).first()
+    if file is None:
+        raise FileAccessError("File not found.")
+    return file
+
+
+def get_download_target(file_id: int, user: User) -> tuple[Path, str]:
+    """Resolve an owned file to its on-disk path and original download name.
+
+    Returns:
+        A ``(storage_path, original_filename)`` tuple.
+
+    Raises:
+        FileAccessError: if the file is missing or not owned by the user.
+        PhysicalFileMissingError: if the record exists but the bytes are gone.
+    """
+    file = get_owned_file(file_id, user)
+    storage_path = Path(file.storage_path)
+    if not storage_path.is_file():
+        current_app.logger.error(
+            "Missing physical file for id=%s user=%s path=%s",
+            file.id, user.id, file.storage_path,
+        )
+        raise PhysicalFileMissingError("The stored file is no longer available.")
+    return storage_path, file.original_filename
+
+
+def delete_file(file_id: int, user: User) -> str:
+    """Delete an owned file's record and its bytes on disk.
+
+    The database row is the source of truth: it is removed first, then the file
+    on disk. A physical file that is already gone is not an error.
+
+    Returns:
+        The original filename of the deleted file (for the flash message).
+
+    Raises:
+        FileAccessError: if the file is missing or not owned by the user.
+        UploadError: if the metadata could not be removed.
+    """
+    file = get_owned_file(file_id, user)
+    original_filename = file.original_filename
+    storage_path = Path(file.storage_path)
+
+    try:
+        db.session.delete(file)
+        db.session.commit()
+    except Exception as exc:
+        db.session.rollback()
+        current_app.logger.exception("Failed to delete file metadata id=%s", file_id)
+        raise UploadError("The file could not be deleted.") from exc
+
+    # Metadata is gone; now remove the bytes. `missing_ok=True` makes an
+    # already-absent file a no-op rather than a failure.
+    try:
+        storage_path.unlink(missing_ok=True)
+    except OSError:
+        # The record is already deleted; a leftover file is logged, not fatal.
+        current_app.logger.warning(
+            "Deleted record but could not remove file on disk: %s", storage_path
+        )
+
+    current_app.logger.info("Deleted file id=%s user=%s", file_id, user.id)
+    return original_filename
+
+
+def rename_file(file_id: int, user: User, new_name: str) -> File:
+    """Rename the display (original) filename only; the on-disk name is untouched.
+
+    Raises:
+        FileAccessError: if the file is missing or not owned by the user.
+        FileValidationError: if the new name is empty or too long.
+        UploadError: if the change could not be persisted.
+    """
+    file = get_owned_file(file_id, user)
+
+    # Strip any path components a client might inject; this is a display label,
+    # never a filesystem path.
+    cleaned = os.path.basename((new_name or "").strip())
+    if not cleaned:
+        raise FileValidationError("Please provide a new filename.")
+    if len(cleaned) > _MAX_DISPLAY_NAME_LENGTH:
+        raise FileValidationError("The filename is too long.")
+
+    file.original_filename = cleaned
+    try:
+        db.session.commit()
+    except Exception as exc:
+        db.session.rollback()
+        current_app.logger.exception("Failed to rename file id=%s", file_id)
+        raise UploadError("The file could not be renamed.") from exc
+
+    current_app.logger.info("Renamed file id=%s user=%s", file_id, user.id)
+    return file
+
+
+def list_files(user: User, query: str | None = None) -> list[File]:
+    """Return the user's files, newest first, optionally filtered by name.
+
+    Search is scoped to the user and matches ``original_filename`` with a
+    case-insensitive substring. The ``ix_files_user_id`` index keeps the
+    per-user filter efficient.
+    """
+    stmt = File.query.filter_by(user_id=user.id)
+    if query:
+        term = query.strip()
+        if term:
+            stmt = stmt.filter(File.original_filename.ilike(f"%{term}%"))
+    return stmt.order_by(File.upload_timestamp.desc()).all()
