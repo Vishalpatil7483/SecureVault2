@@ -5,7 +5,7 @@
 <!-- ============================ Hero ============================ -->
 <section class="hero text-center sv-fade-in">
   <span class="badge rounded-pill text-bg-primary-subtle border border-primary-subtle text-primary mb-3 px-3 py-2">
-    <i class="bi bi-shield-check me-1"></i>Open-source secure storage
+    <i class="bi bi-shield-check me-1" aria-hidden="true"></i>Open-source secure storage
   </span>
   <h1 class="display-4 fw-bold mb-3">
     Store files with<br>
@@ -19,16 +19,16 @@
   <div class="d-flex justify-content-center gap-2 flex-wrap">
     {% if current_user.is_authenticated %}
       <a class="btn btn-primary btn-lg px-4" href="{{ url_for('vault.dashboard') }}">
-        <i class="bi bi-grid-1x2 me-2"></i>Go to dashboard
+        <i class="bi bi-grid-1x2 me-2" aria-hidden="true"></i>Go to dashboard
       </a>
     {% else %}
       <a class="btn btn-primary btn-lg px-4" href="{{ url_for('auth.register') }}">
-        <i class="bi bi-rocket-takeoff me-2"></i>Get started
+        <i class="bi bi-rocket-takeoff me-2" aria-hidden="true"></i>Get started
       </a>
     {% endif %}
     <a class="btn btn-outline-secondary btn-lg px-4" href="https://github.com/your-username/securevault"
        target="_blank" rel="noopener">
-      <i class="bi bi-github me-2"></i>View on GitHub
+      <i class="bi bi-github me-2" aria-hidden="true"></i>View on GitHub
     </a>
   </div>
 </section>
@@ -46,7 +46,7 @@
       <div class="col-6 col-md-4 col-lg-2">
         <div class="card h-100 shadow-sm stat-card">
           <div class="card-body py-3">
-            <i class="bi bi-{{ icon }} text-primary fs-4 d-block mb-1"></i>
+            <i class="bi bi-{{ icon }} text-primary fs-4 d-block mb-1" aria-hidden="true"></i>
             <div class="fw-bold small">{{ value }}</div>
             <div class="text-muted stat-label">{{ label }}</div>
           </div>
@@ -81,7 +81,7 @@
         <div class="card h-100 shadow-sm feature-card">
           <div class="card-body p-4">
             <div class="feature-icon bg-{{ color }}-subtle text-{{ color }} mb-3">
-              <i class="bi bi-{{ icon }}"></i>
+              <i class="bi bi-{{ icon }}" aria-hidden="true"></i>
             </div>
             <h3 class="h5">{{ title }}</h3>
             <p class="text-muted mb-0">{{ text }}</p>
@@ -113,7 +113,7 @@
         <div class="card h-100 shadow-sm security-card">
           <div class="card-body p-4 d-flex gap-3">
             <div class="feature-icon bg-primary-subtle text-primary flex-shrink-0">
-              <i class="bi bi-{{ icon }}"></i>
+              <i class="bi bi-{{ icon }}" aria-hidden="true"></i>
             </div>
             <div>
               <h3 class="h6 fw-bold">{{ title }}</h3>
@@ -143,7 +143,7 @@
       <div class="card shadow-sm arch-card w-100">
         <div class="card-body py-3 d-flex align-items-center gap-3">
           <div class="feature-icon bg-primary-subtle text-primary flex-shrink-0">
-            <i class="bi bi-{{ icon }}"></i>
+            <i class="bi bi-{{ icon }}" aria-hidden="true"></i>
           </div>
           <div>
             <div class="fw-bold">{{ title }}</div>
@@ -176,7 +176,7 @@
       <div class="col-6 col-md-4 col-lg-2">
         <div class="card h-100 shadow-sm text-center tech-card">
           <div class="card-body py-4">
-            <i class="bi bi-{{ icon }} fs-3 text-primary d-block mb-2"></i>
+            <i class="bi bi-{{ icon }} fs-3 text-primary d-block mb-2" aria-hidden="true"></i>
             <div class="fw-bold small">{{ name }}</div>
             <div class="text-muted tech-desc">{{ desc }}</div>
           </div>
@@ -190,22 +190,22 @@
 <section class="py-5 sv-fade-in">
   <div class="card border-0 shadow cta-card text-center">
     <div class="card-body py-5">
-      <i class="bi bi-shield-lock-fill fs-1 text-primary d-block mb-3"></i>
+      <i class="bi bi-shield-lock-fill fs-1 text-primary d-block mb-3" aria-hidden="true"></i>
       <h2 class="fw-bold mb-2">Ready to secure your files?</h2>
       <p class="text-muted mx-auto sv-narrow mb-4">
         Create an account in seconds. Every file you upload is encrypted before it hits disk.
       </p>
       {% if current_user.is_authenticated %}
         <a class="btn btn-primary btn-lg px-5" href="{{ url_for('vault.dashboard') }}">
-          <i class="bi bi-grid-1x2 me-2"></i>Open your vault
+          <i class="bi bi-grid-1x2 me-2" aria-hidden="true"></i>Open your vault
         </a>
       {% else %}
         <div class="d-flex justify-content-center gap-2 flex-wrap">
           <a class="btn btn-primary btn-lg px-5" href="{{ url_for('auth.register') }}">
-            <i class="bi bi-person-plus me-2"></i>Create account
+            <i class="bi bi-person-plus me-2" aria-hidden="true"></i>Create account
           </a>
           <a class="btn btn-outline-secondary btn-lg px-4" href="{{ url_for('auth.login') }}">
-            <i class="bi bi-box-arrow-in-right me-2"></i>Sign in
+            <i class="bi bi-box-arrow-in-right me-2" aria-hidden="true"></i>Sign in
           </a>
         </div>
       {% endif %}

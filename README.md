@@ -1,8 +1,8 @@
-# 🔒 SecureVault 2.0
+# 🔒 SecureVault
 
 **Encrypted file storage web application built with Flask.**
 
-SecureVault 2.0 is a production-oriented web app for storing files securely.
+SecureVault is a production-oriented web app for storing files securely.
 Every file is encrypted with **AES-256-GCM** before it touches disk, its
 integrity is verified with a **SHA-256 checksum** on every download, and every
 action is recorded in an immutable **audit log**. It was built as a portfolio
@@ -31,8 +31,12 @@ files.
   stored SHA-256 checksum; tampering is detected and rejected.
 - **File management** — search, rename (display name only), and delete, all
   scoped to the current user.
-- **Dashboard** — storage summary (total files, total storage used) and a
-  recently-uploaded list.
+- **Dashboard** — SaaS-style overview: statistics cards, storage-usage bar,
+  a 14-day upload-trend chart (Chart.js), recent uploads and recent activity.
+- **Activity Center** — dedicated, filterable, searchable, paginated timeline
+  of the full audit trail, grouped by Today / Yesterday / Earlier.
+- **Modern UX** — dark/light theme with system detection, drag-and-drop
+  uploads, toast notifications, file-type icons, and responsive design.
 - **Audit logging** — every upload, download, rename, and delete is recorded
   (including failures), with client IP and timestamp.
 - **Hardened by default** — CSRF protection, strict Content-Security-Policy,
@@ -49,7 +53,7 @@ files.
 | Forms / CSRF | Flask-WTF, WTForms |
 | Rate limiting | Flask-Limiter |
 | Cryptography | `cryptography` (AES-256-GCM), `hashlib` (SHA-256) |
-| Frontend | Bootstrap 5 (self-hosted), Jinja2 templates |
+| Frontend | Bootstrap 5, Bootstrap Icons, Chart.js (all self-hosted), Jinja2 |
 | Server | Gunicorn |
 | Packaging | Docker, docker-compose |
 
@@ -126,6 +130,7 @@ python run.py                            # http://127.0.0.1:5000
 | `DATABASE_URL` | no | SQLAlchemy URL. Defaults to local SQLite in `instance/`. |
 | `RATELIMIT_STORAGE_URI` | no | Rate-limit backend (`memory://` default; use Redis in prod). |
 | `MAX_FILE_SIZE` | no | Max upload size in bytes (default 16 MB). |
+| `STORAGE_QUOTA_BYTES` | no | Display-only quota for the dashboard usage bar (default 1 GB). |
 | `HOST` / `PORT` | no | Bind address / port. |
 | `LOG_LEVEL` | no | `DEBUG` / `INFO` / `WARNING` / … |
 

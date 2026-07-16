@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Activity — SecureVault 2.1{% endblock %}
+{% block title %}Activity — SecureVault{% endblock %}
 
 {% block content %}
 <!-- Page heading -->
@@ -9,7 +9,7 @@
     <p class="text-muted mb-0">Complete audit trail of your account — {{ pagination.total }} event{{ '' if pagination.total == 1 else 's' }} recorded.</p>
   </div>
   <a class="btn btn-outline-secondary" href="{{ url_for('vault.dashboard') }}">
-    <i class="bi bi-grid-1x2 me-1"></i>Back to dashboard
+    <i class="bi bi-grid-1x2 me-1" aria-hidden="true"></i>Back to dashboard
   </a>
 </div>
 
@@ -27,12 +27,12 @@
       } %}
       <a class="btn btn-sm {{ 'btn-primary' if not active_action else 'btn-outline-secondary' }}"
          href="{{ url_for('vault.activity', q=search_query or None) }}">
-        <i class="bi bi-collection me-1"></i>All
+        <i class="bi bi-collection me-1" aria-hidden="true"></i>All
       </a>
       {% for act in actions %}
         <a class="btn btn-sm {{ 'btn-primary' if active_action == act else 'btn-outline-secondary' }}"
            href="{{ url_for('vault.activity', action=act, q=search_query or None) }}">
-          <i class="bi bi-{{ filter_meta[act] }} me-1"></i>{{ act | capitalize }}
+          <i class="bi bi-{{ filter_meta[act] }} me-1" aria-hidden="true"></i>{{ act | capitalize }}
         </a>
       {% endfor %}
     </div>
@@ -40,13 +40,13 @@
     <form action="{{ url_for('vault.activity') }}" method="get" class="d-flex" role="search">
       {% if active_action %}<input type="hidden" name="action" value="{{ active_action }}">{% endif %}
       <div class="input-group input-group-sm">
-        <span class="input-group-text bg-body"><i class="bi bi-search"></i></span>
+        <span class="input-group-text bg-body"><i class="bi bi-search" aria-hidden="true"></i></span>
         <input class="form-control" type="search" name="q" value="{{ search_query }}"
                placeholder="Search by filename" aria-label="Search by filename">
         <button class="btn btn-outline-secondary" type="submit">Search</button>
         {% if search_query %}
           <a class="btn btn-outline-secondary" aria-label="Clear search"
-             href="{{ url_for('vault.activity', action=active_action) }}"><i class="bi bi-x-lg"></i></a>
+             href="{{ url_for('vault.activity', action=active_action) }}"><i class="bi bi-x-lg" aria-hidden="true"></i></a>
         {% endif %}
       </div>
     </form>
@@ -66,7 +66,7 @@
   {% for label, entries in groups %}
     <div class="mb-4">
       <h2 class="h6 text-uppercase text-muted fw-semibold mb-2 d-flex align-items-center gap-2">
-        <i class="bi bi-calendar3"></i>{{ label }}
+        <i class="bi bi-calendar3" aria-hidden="true"></i>{{ label }}
         <span class="badge text-bg-light border">{{ entries | length }}</span>
       </h2>
       <div class="card shadow-sm">
@@ -87,7 +87,7 @@
                 <tr>
                   <td class="text-nowrap">
                     <span class="activity-icon bg-{{ meta[1] }}-subtle text-{{ meta[1] }} me-2">
-                      <i class="bi bi-{{ meta[0] }}"></i>
+                      <i class="bi bi-{{ meta[0] }}" aria-hidden="true"></i>
                     </span>
                     <span class="fw-semibold text-capitalize">{{ entry.action }}</span>
                   </td>
@@ -104,11 +104,11 @@
                   <td>
                     {% if entry.success %}
                       <span class="badge text-bg-success-subtle text-success border border-success-subtle">
-                        <i class="bi bi-check-circle me-1"></i>Success
+                        <i class="bi bi-check-circle me-1" aria-hidden="true"></i>Success
                       </span>
                     {% else %}
                       <span class="badge text-bg-danger-subtle text-danger border border-danger-subtle">
-                        <i class="bi bi-x-circle me-1"></i>Failed
+                        <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Failed
                       </span>
                     {% endif %}
                   </td>
@@ -135,7 +135,7 @@
         <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
           <a class="page-link" aria-label="Previous"
              href="{{ url_for('vault.activity', page=pagination.prev_num, action=active_action, q=search_query or None) if pagination.has_prev else '#' }}">
-            <i class="bi bi-chevron-left"></i>
+            <i class="bi bi-chevron-left" aria-hidden="true"></i>
           </a>
         </li>
         {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
@@ -150,7 +150,7 @@
         <li class="page-item {{ 'disabled' if not pagination.has_next }}">
           <a class="page-link" aria-label="Next"
              href="{{ url_for('vault.activity', page=pagination.next_num, action=active_action, q=search_query or None) if pagination.has_next else '#' }}">
-            <i class="bi bi-chevron-right"></i>
+            <i class="bi bi-chevron-right" aria-hidden="true"></i>
           </a>
         </li>
       </ul>
@@ -160,11 +160,11 @@
 {% else %}
   <div class="card shadow-sm">
     <div class="card-body text-center text-muted empty-state">
-      <span class="empty-ring"><i class="bi bi-journal empty-icon"></i></span>
+      <span class="empty-ring"><i class="bi bi-journal empty-icon" aria-hidden="true"></i></span>
       {% if search_query or active_action %}
         <p class="mb-0">No activity matches your current filters.</p>
         <a class="btn btn-outline-secondary btn-sm mt-3" href="{{ url_for('vault.activity') }}">
-          <i class="bi bi-x-lg me-1"></i>Clear filters
+          <i class="bi bi-x-lg me-1" aria-hidden="true"></i>Clear filters
         </a>
       {% else %}
         <p class="mb-1 fw-semibold">No activity yet</p>

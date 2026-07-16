@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}SecureVault 2.3{% endblock %}</title>
+  <title>{% block title %}SecureVault{% endblock %}</title>
   <!-- All assets are self-hosted (no CDNs) so the strict Content-Security-
        Policy (default-src 'self') stays intact. theme.js runs before first
        paint to apply the saved/system theme without a flash. -->
@@ -13,11 +13,14 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 </head>
 <body class="bg-body-tertiary d-flex flex-column min-vh-100">
+  <a href="#main-content" class="visually-hidden-focusable btn btn-primary position-absolute top-0 start-0 m-2 z-3">
+    Skip to main content
+  </a>
   <header>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark sv-navbar">
       <div class="container">
         <a class="navbar-brand fw-semibold d-flex align-items-center gap-2" href="{{ url_for('main.index') }}">
-          <i class="bi bi-shield-lock-fill text-primary"></i>
+          <i class="bi bi-shield-lock-fill text-primary" aria-hidden="true"></i>
           <span>SecureVault</span>
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -29,18 +32,18 @@
           <ul class="navbar-nav me-auto">
             <li class="nav-item">
               <a class="nav-link d-flex align-items-center gap-1" href="{{ url_for('main.index') }}">
-                <i class="bi bi-house"></i> Home
+                <i class="bi bi-house" aria-hidden="true"></i> Home
               </a>
             </li>
             {% if current_user.is_authenticated %}
               <li class="nav-item">
                 <a class="nav-link d-flex align-items-center gap-1" href="{{ url_for('vault.dashboard') }}">
-                  <i class="bi bi-grid-1x2"></i> Dashboard
+                  <i class="bi bi-grid-1x2" aria-hidden="true"></i> Dashboard
                 </a>
               </li>
               <li class="nav-item">
                 <a class="nav-link d-flex align-items-center gap-1" href="{{ url_for('vault.activity') }}">
-                  <i class="bi bi-activity"></i> Activity
+                  <i class="bi bi-activity" aria-hidden="true"></i> Activity
                 </a>
               </li>
             {% endif %}
@@ -49,13 +52,13 @@
             <li class="nav-item">
               <button type="button" id="theme-toggle" class="btn btn-outline-light btn-sm"
                       aria-label="Toggle dark mode" title="Toggle dark mode">
-                <i class="bi bi-moon-stars" id="theme-toggle-icon"></i>
+                <i class="bi bi-moon-stars" aria-hidden="true" id="theme-toggle-icon"></i>
               </button>
             </li>
             {% if current_user.is_authenticated %}
               <li class="nav-item">
                 <span class="navbar-text mx-lg-2 d-flex align-items-center gap-1">
-                  <i class="bi bi-person-circle"></i>
+                  <i class="bi bi-person-circle" aria-hidden="true"></i>
                   <strong>{{ current_user.username }}</strong>
                 </span>
               </li>
@@ -63,19 +66,19 @@
                 <form action="{{ url_for('auth.logout') }}" method="post" class="d-inline">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit" class="btn btn-outline-light btn-sm">
-                    <i class="bi bi-box-arrow-right me-1"></i>Log out
+                    <i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>Log out
                   </button>
                 </form>
               </li>
             {% else %}
               <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('auth.login') }}">
-                  <i class="bi bi-box-arrow-in-right me-1"></i>Log in
+                  <i class="bi bi-box-arrow-in-right me-1" aria-hidden="true"></i>Log in
                 </a>
               </li>
               <li class="nav-item">
                 <a class="btn btn-primary btn-sm ms-lg-2" href="{{ url_for('auth.register') }}">
-                  <i class="bi bi-person-plus me-1"></i>Register
+                  <i class="bi bi-person-plus me-1" aria-hidden="true"></i>Register
                 </a>
               </li>
             {% endif %}
@@ -85,7 +88,7 @@
     </nav>
   </header>
 
-  <main class="container py-4 flex-grow-1">
+  <main class="container py-4 flex-grow-1" id="main-content">
     {% block content %}{% endblock %}
   </main>
 
@@ -102,22 +105,22 @@
     <div class="container">
       <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
         <div class="d-flex align-items-center gap-2">
-          <i class="bi bi-shield-lock-fill text-primary"></i>
+          <i class="bi bi-shield-lock-fill text-primary" aria-hidden="true"></i>
           <span class="fw-semibold">SecureVault</span>
-          <span class="badge text-bg-secondary">v2.4</span>
+          <span class="badge text-bg-secondary">v2.5</span>
         </div>
         <ul class="nav gap-1">
           <li class="nav-item">
             <a class="nav-link px-2 text-muted" href="https://github.com/your-username/securevault"
-               target="_blank" rel="noopener"><i class="bi bi-github me-1"></i>GitHub</a>
+               target="_blank" rel="noopener"><i class="bi bi-github me-1" aria-hidden="true"></i>GitHub</a>
           </li>
           <li class="nav-item">
             <a class="nav-link px-2 text-muted" href="https://github.com/your-username/securevault#readme"
-               target="_blank" rel="noopener"><i class="bi bi-book me-1"></i>Documentation</a>
+               target="_blank" rel="noopener"><i class="bi bi-book me-1" aria-hidden="true"></i>Documentation</a>
           </li>
           <li class="nav-item">
             <a class="nav-link px-2 text-muted" href="https://github.com/your-username/securevault/blob/main/LICENSE"
-               target="_blank" rel="noopener"><i class="bi bi-file-earmark-check me-1"></i>MIT License</a>
+               target="_blank" rel="noopener"><i class="bi bi-file-earmark-check me-1" aria-hidden="true"></i>MIT License</a>
           </li>
         </ul>
         <span class="text-muted small">© 2026 SecureVault · AES-256-GCM encrypted storage</span>
