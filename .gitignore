@@ -42,3 +42,13 @@ Thumbs.db
 .coverage
 htmlcov/
 .tox/
+
+# ---- Linters / type checkers / build artifacts ----
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# ---- Docker ----
+docker-compose.override.yml

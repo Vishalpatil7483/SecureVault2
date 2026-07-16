@@ -7,6 +7,7 @@
   <!-- Bootstrap 5 is self-hosted (not a CDN) so the strict Content-Security-
        Policy (default-src 'self') set in Milestone 2 stays intact. -->
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 </head>
 <body class="bg-body-tertiary d-flex flex-column min-vh-100">
   <header>
@@ -81,5 +82,6 @@
   </footer>
 
   <script src="{{ url_for('static', filename='vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>

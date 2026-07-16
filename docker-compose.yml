@@ -1,0 +1,25 @@
+# Local production-style run of SecureVault 2.0.
+#
+# Prerequisites:
+#   1. Create a .env file (see .env.example) containing at least a strong
+#      SECRET_KEY and a valid 32-byte ENCRYPTION_KEY.
+#   2. docker compose up --build
+#
+# The named volume persists the SQLite database and encrypted uploads across
+# container restarts.
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      FLASK_CONFIG: production
+      PORT: "8000"
+    volumes:
+      - vault-data:/app/instance
+    restart: unless-stopped
+
+volumes:
+  vault-data:

@@ -1,10 +1,61 @@
 {% extends "base.html" %}
-{% block title %}SecureVault 2.0 — Home{% endblock %}
+{% block title %}SecureVault 2.0 — Encrypted file storage{% endblock %}
+
 {% block content %}
-  <h1>SecureVault 2.0</h1>
-  {% if current_user.is_authenticated %}
-    <p>Welcome back, {{ current_user.username }}.</p>
-  {% else %}
-    <p>A secure file storage application. Please log in or register to continue.</p>
-  {% endif %}
+<section class="hero text-center">
+  <h1 class="display-5 fw-bold mb-3">Store your files, encrypted end to end</h1>
+  <p class="lead text-muted mx-auto mb-4">
+    SecureVault 2.0 encrypts every file with AES-256-GCM, verifies integrity on
+    every download, and keeps a full audit trail — so your data stays private
+    and tamper-evident.
+  </p>
+
+  <div class="d-flex justify-content-center gap-2 flex-wrap">
+    {% if current_user.is_authenticated %}
+      <a class="btn btn-primary btn-lg" href="{{ url_for('vault.dashboard') }}">Go to your dashboard</a>
+    {% else %}
+      <a class="btn btn-primary btn-lg" href="{{ url_for('auth.register') }}">Get started</a>
+      <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('auth.login') }}">Log in</a>
+    {% endif %}
+  </div>
+</section>
+
+<section class="row g-4 justify-content-center pb-4">
+  <div class="col-12 col-md-4">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
+        <div class="feature-icon bg-primary-subtle text-primary mb-3">🔐</div>
+        <h2 class="h5">AES-256-GCM encryption</h2>
+        <p class="text-muted mb-0">
+          Files are encrypted with a unique key before they ever touch disk,
+          using authenticated encryption.
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
+        <div class="feature-icon bg-success-subtle text-success mb-3">✔️</div>
+        <h2 class="h5">Integrity verification</h2>
+        <p class="text-muted mb-0">
+          A SHA-256 checksum is verified on every download, so corruption or
+          tampering is detected automatically.
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body">
+        <div class="feature-icon bg-warning-subtle text-warning mb-3">📋</div>
+        <h2 class="h5">Full audit trail</h2>
+        <p class="text-muted mb-0">
+          Every upload, download, rename and delete is recorded with an
+          immutable audit log.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
 {% endblock %}

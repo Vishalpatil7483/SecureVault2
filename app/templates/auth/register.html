@@ -1,31 +1,56 @@
 {% extends "base.html" %}
 {% block title %}Register — SecureVault 2.0{% endblock %}
 {% block content %}
-  <h1>Create an account</h1>
-  <form method="post" action="{{ url_for('auth.register') }}">
-    {{ form.hidden_tag() }}
+<div class="row justify-content-center">
+  <div class="col-12 col-sm-10 col-md-6 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h1 class="h4 mb-4 text-center">Create an account</h1>
 
-    <p>
-      {{ form.username.label }}<br>
-      {{ form.username(autocomplete="username") }}
-      {% for error in form.username.errors %}<span class="error">{{ error }}</span>{% endfor %}
+        <form method="post" action="{{ url_for('auth.register') }}" novalidate>
+          {{ form.hidden_tag() }}
+
+          <div class="mb-3">
+            {{ form.username.label(class="form-label") }}
+            {{ form.username(class="form-control" ~ (" is-invalid" if form.username.errors else ""), autocomplete="username") }}
+            {% for error in form.username.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="mb-3">
+            {{ form.email.label(class="form-label") }}
+            {{ form.email(class="form-control" ~ (" is-invalid" if form.email.errors else ""), autocomplete="email") }}
+            {% for error in form.email.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="mb-3">
+            {{ form.password.label(class="form-label") }}
+            {{ form.password(class="form-control" ~ (" is-invalid" if form.password.errors else ""), autocomplete="new-password") }}
+            {% for error in form.password.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="mb-3">
+            {{ form.confirm.label(class="form-label") }}
+            {{ form.confirm(class="form-control" ~ (" is-invalid" if form.confirm.errors else ""), autocomplete="new-password") }}
+            {% for error in form.confirm.errors %}
+              <div class="invalid-feedback">{{ error }}</div>
+            {% endfor %}
+          </div>
+
+          <div class="d-grid">
+            {{ form.submit(class="btn btn-primary") }}
+          </div>
+        </form>
+      </div>
+    </div>
+    <p class="text-center text-muted mt-3 mb-0">
+      Already registered? <a href="{{ url_for('auth.login') }}">Log in</a>.
     </p>
-    <p>
-      {{ form.email.label }}<br>
-      {{ form.email(autocomplete="email") }}
-      {% for error in form.email.errors %}<span class="error">{{ error }}</span>{% endfor %}
-    </p>
-    <p>
-      {{ form.password.label }}<br>
-      {{ form.password(autocomplete="new-password") }}
-      {% for error in form.password.errors %}<span class="error">{{ error }}</span>{% endfor %}
-    </p>
-    <p>
-      {{ form.confirm.label }}<br>
-      {{ form.confirm(autocomplete="new-password") }}
-      {% for error in form.confirm.errors %}<span class="error">{{ error }}</span>{% endfor %}
-    </p>
-    <p>{{ form.submit() }}</p>
-  </form>
-  <p>Already registered? <a href="{{ url_for('auth.login') }}">Log in</a>.</p>
+  </div>
+</div>
 {% endblock %}

@@ -43,6 +43,14 @@ def create_app(config_name: str | None = None) -> Flask:
     # --- Configuration -----------------------------------------------------
     app.config.from_object(get_config(config_name))
 
+    # Behind a reverse proxy (Render, nginx), trust X-Forwarded-* for the real
+    # client IP/scheme — rate limiting and audit-log IPs are wrong otherwise.
+    # Applied only in production, where a proxy is part of the deployment.
+    if app.config["ENV_NAME"] == "production":
+        from werkzeug.middleware.proxy_fix import ProxyFix
+
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
     # --- Logging (configure early so later steps can log) ------------------
     configure_logging(app)
 

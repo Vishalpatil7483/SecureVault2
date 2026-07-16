@@ -23,6 +23,7 @@ import secrets
 from pathlib import Path
 
 from flask import current_app, has_request_context, request
+from sqlalchemy import func
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
@@ -398,3 +399,33 @@ def list_files(user: User, query: str | None = None) -> list[File]:
         if term:
             stmt = stmt.filter(File.original_filename.ilike(f"%{term}%"))
     return stmt.order_by(File.upload_timestamp.desc()).all()
+
+
+def get_storage_stats(user: User, recent_limit: int = 5) -> dict:
+    """Return a read-only summary of the user's vault for the dashboard.
+
+    Aggregation happens in the database (COUNT/SUM) rather than in Python, so it
+    stays efficient as the number of files grows.
+
+    Returns:
+        A dict with ``total_files`` (int), ``total_bytes`` (int) and ``recent``
+        (the most recently uploaded ``File`` records).
+    """
+    total_files, total_bytes = (
+        db.session.query(
+            func.count(File.id), func.coalesce(func.sum(File.file_size), 0)
+        )
+        .filter(File.user_id == user.id)
+        .one()
+    )
+    recent = (
+        File.query.filter_by(user_id=user.id)
+        .order_by(File.upload_timestamp.desc())
+        .limit(recent_limit)
+        .all()
+    )
+    return {
+        "total_files": int(total_files or 0),
+        "total_bytes": int(total_bytes or 0),
+        "recent": recent,
+    }

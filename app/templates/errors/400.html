@@ -1,7 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Bad request — SecureVault 2.0{% endblock %}
 {% block content %}
-  <h1>400 — Bad request</h1>
-  <p>{{ reason or "Your request could not be processed. Please try again." }}</p>
-  <p><a href="{{ url_for('main.index') }}">Return home</a></p>
+<div class="text-center empty-state">
+  <div class="display-1 fw-bold text-warning">400</div>
+  <h1 class="h4 mt-2">Bad request</h1>
+  <p class="text-muted">
+    {{ reason or "Your request could not be processed. Please try again — if you were submitting a form, reload the page first." }}
+  </p>
+  <a class="btn btn-primary mt-2" href="{{ url_for('main.index') }}">Return home</a>
+</div>
 {% endblock %}

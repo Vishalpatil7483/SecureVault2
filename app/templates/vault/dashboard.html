@@ -26,6 +26,57 @@
     </div>
   </div>
 
+  <!-- Storage summary -->
+  <div class="col-12 col-lg-10 col-xl-8">
+    <div class="row g-3">
+      <div class="col-6 col-md-4">
+        <div class="card shadow-sm h-100 stat-card">
+          <div class="card-body">
+            <div class="stat-label text-muted">Total files</div>
+            <div class="stat-value">{{ stats.total_files }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-4">
+        <div class="card shadow-sm h-100 stat-card">
+          <div class="card-body">
+            <div class="stat-label text-muted">Storage used</div>
+            <div class="stat-value">{{ stats.total_bytes | filesizeformat_iec }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="card shadow-sm h-100 stat-card">
+          <div class="card-body">
+            <div class="stat-label text-muted">Encryption</div>
+            <div class="stat-value">AES-256</div>
+            <div class="small text-muted">GCM · every file</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if stats.recent %}
+  <!-- Recently uploaded -->
+  <div class="col-12 col-lg-10 col-xl-8">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white fw-semibold">Recently uploaded</div>
+      <ul class="list-group list-group-flush">
+        {% for file in stats.recent %}
+          <li class="list-group-item d-flex justify-content-between align-items-center gap-3">
+            <span class="text-break">{{ file.original_filename }}</span>
+            <span class="text-nowrap text-muted small">
+              {{ file.file_size | filesizeformat_iec }} ·
+              {{ file.upload_timestamp.strftime('%Y-%m-%d %H:%M') }}
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Files list -->
   <div class="col-12 col-lg-10 col-xl-8">
     <div class="card shadow-sm">
@@ -124,11 +175,14 @@
         {% endfor %}
 
       {% else %}
-        <div class="card-body text-center text-muted py-5">
+        <div class="card-body text-center text-muted empty-state">
+          <div class="empty-icon mb-2">🗂️</div>
           {% if search_query %}
             <p class="mb-0">No files match &ldquo;{{ search_query }}&rdquo;.</p>
+            <a class="btn btn-outline-secondary btn-sm mt-3" href="{{ url_for('vault.dashboard') }}">Clear search</a>
           {% else %}
-            <p class="mb-0">You haven't uploaded any files yet.</p>
+            <p class="mb-1 fw-semibold">Your vault is empty</p>
+            <p class="mb-0">Upload your first file using the panel above.</p>
           {% endif %}
         </div>
       {% endif %}

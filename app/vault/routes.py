@@ -28,6 +28,7 @@ from app.vault.services import (
     UploadError,
     delete_file,
     get_decrypted_file,
+    get_storage_stats,
     list_files,
     rename_file,
     save_upload,
@@ -48,11 +49,15 @@ def filesizeformat_iec(num_bytes: int) -> str:
 @vault_bp.route("/dashboard")
 @login_required
 def dashboard():
-    """Show the current user's files, the upload form, and search results."""
+    """Show the current user's files, storage stats, and search results."""
     search_query = request.args.get("q", "").strip()
     files = list_files(current_user, search_query)
+    stats = get_storage_stats(current_user)
     return render_template(
-        "vault/dashboard.html", files=files, search_query=search_query
+        "vault/dashboard.html",
+        files=files,
+        search_query=search_query,
+        stats=stats,
     )
 
 

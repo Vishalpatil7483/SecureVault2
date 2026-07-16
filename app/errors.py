@@ -29,6 +29,13 @@ def register_error_handlers(app: Flask) -> None:
     def not_found(error):
         return render_template("errors/404.html"), 404
 
+    @app.errorhandler(413)
+    def payload_too_large(error):
+        # Raised when an upload exceeds MAX_CONTENT_LENGTH.
+        max_bytes = app.config.get("MAX_CONTENT_LENGTH") or 0
+        max_mb = max_bytes / (1024 * 1024)
+        return render_template("errors/413.html", max_mb=max_mb), 413
+
     @app.errorhandler(429)
     def too_many_requests(error):
         # Raised by Flask-Limiter when a rate limit is exceeded.

@@ -1,7 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Not found — SecureVault 2.0{% endblock %}
+{% block title %}Page not found — SecureVault 2.0{% endblock %}
 {% block content %}
-  <h1>404 — Not found</h1>
-  <p>The page you requested does not exist.</p>
-  <p><a href="{{ url_for('main.index') }}">Return home</a></p>
+<div class="text-center empty-state">
+  <div class="display-1 fw-bold text-primary">404</div>
+  <h1 class="h4 mt-2">Page not found</h1>
+  <p class="text-muted">The page you requested doesn't exist or may have moved.</p>
+  <a class="btn btn-primary mt-2" href="{{ url_for('main.index') }}">Return home</a>
+</div>
 {% endblock %}

@@ -1,0 +1,61 @@
+/* SecureVault 2.0 — small design touches on top of Bootstrap 5. */
+
+:root {
+  --sv-brand: #0d6efd;
+}
+
+body {
+  min-height: 100vh;
+}
+
+.navbar-brand {
+  letter-spacing: 0.2px;
+}
+
+/* Landing hero */
+.hero {
+  padding: 4rem 0 3rem;
+}
+
+.hero .lead {
+  max-width: 40rem;
+}
+
+/* Stat cards on the dashboard */
+.stat-card .stat-value {
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.stat-card .stat-label {
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-size: 0.75rem;
+}
+
+/* Feature icons on the landing page */
+.feature-icon {
+  width: 3rem;
+  height: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  font-size: 1.25rem;
+}
+
+/* Generic empty-state block */
+.empty-state {
+  padding: 3rem 1rem;
+}
+
+.empty-state .empty-icon {
+  font-size: 2.5rem;
+  opacity: 0.5;
+}
+
+/* Keep long filenames from breaking table layout */
+.filename-cell {
+  max-width: 22rem;
+}

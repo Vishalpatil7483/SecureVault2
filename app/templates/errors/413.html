@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}File too large — SecureVault 2.0{% endblock %}
+{% block content %}
+<div class="text-center empty-state">
+  <div class="display-1 fw-bold text-warning">413</div>
+  <h1 class="h4 mt-2">File too large</h1>
+  <p class="text-muted">
+    The file you tried to upload exceeds the
+    {% if max_mb %}{{ "%.0f"|format(max_mb) }} MB {% endif %}limit.
+    Please choose a smaller file.
+  </p>
+  <a class="btn btn-primary mt-2" href="{{ url_for('vault.dashboard') }}">Back to dashboard</a>
+</div>
+{% endblock %}

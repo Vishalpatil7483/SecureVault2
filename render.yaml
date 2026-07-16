@@ -1,0 +1,23 @@
+# Render Blueprint for SecureVault 2.0.
+# Deploy by pushing this repo to GitHub and creating a new Blueprint on Render.
+services:
+  - type: web
+    name: securevault
+    runtime: docker
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: FLASK_CONFIG
+        value: production
+      # A strong session secret is generated automatically by Render.
+      - key: SECRET_KEY
+        generateValue: true
+      # The encryption master key must be set manually (Render dashboard):
+      #   python -c "import os,base64; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"
+      - key: ENCRYPTION_KEY
+        sync: false
+    # Persistent disk for the SQLite database and encrypted uploads.
+    disk:
+      name: vault-data
+      mountPath: /app/instance
+      sizeGB: 1
