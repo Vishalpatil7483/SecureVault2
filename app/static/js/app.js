@@ -1,10 +1,10 @@
-// SecureVault 2.0 — minimal progressive enhancement.
-// Self-hosted so it complies with the app's strict Content-Security-Policy
-// (no inline scripts). Shows a loading indicator on form submission and
-// prevents accidental double-submits.
+// SecureVault 2.1 — progressive enhancement.
+// Self-hosted and CSP-compliant (no inline scripts/styles in templates;
+// dynamic styling happens here via the DOM API).
 (function () {
   "use strict";
 
+  // --- Loading indicator on form submit (prevents double-submits) ---------
   document.addEventListener(
     "submit",
     function (event) {
@@ -14,8 +14,6 @@
       var button = form.querySelector('button[type="submit"]');
       if (!button || button.disabled) return;
 
-      // Preserve the label, then swap in a spinner. The form submits normally;
-      // disabling the button only guards against a second click.
       button.dataset.originalHtml = button.innerHTML;
       button.disabled = true;
       button.innerHTML =
@@ -23,4 +21,62 @@
     },
     true
   );
+
+  document.addEventListener("DOMContentLoaded", function () {
+    // --- Storage progress bar (width set from data attribute, not inline CSS)
+    document.querySelectorAll(".progress-bar[data-width-pct]").forEach(function (bar) {
+      var pct = parseFloat(bar.dataset.widthPct);
+      if (!isNaN(pct)) {
+        bar.style.width = Math.min(Math.max(pct, 0), 100) + "%";
+      }
+    });
+
+    // --- Upload trend chart (data supplied via a JSON data island) --------
+    var canvas = document.getElementById("uploadTrendChart");
+    var dataEl = document.getElementById("upload-trend-data");
+    if (!canvas || !dataEl || typeof Chart === "undefined") return;
+
+    var trend;
+    try {
+      trend = JSON.parse(dataEl.textContent);
+    } catch (err) {
+      return; // malformed data — skip the chart rather than break the page
+    }
+    if (!Array.isArray(trend) || trend.length === 0) return;
+
+    new Chart(canvas, {
+      type: "bar",
+      data: {
+        labels: trend.map(function (d) { return d.label; }),
+        datasets: [{
+          label: "Uploads",
+          data: trend.map(function (d) { return d.count; }),
+          backgroundColor: "rgba(13, 110, 253, 0.55)",
+          borderColor: "rgba(13, 110, 253, 1)",
+          borderWidth: 1,
+          borderRadius: 4,
+          maxBarThickness: 26
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { displayColors: false }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { precision: 0 },
+            grid: { color: "rgba(0,0,0,0.05)" }
+          },
+          x: {
+            grid: { display: false },
+            ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 10 }
+          }
+        }
+      }
+    });
+  });
 })();

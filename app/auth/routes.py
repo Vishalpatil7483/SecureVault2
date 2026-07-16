@@ -58,6 +58,11 @@ def login():
         else:
             session.permanent = True  # apply PERMANENT_SESSION_LIFETIME
             login_user(user, remember=form.remember.data)
+            # Audit trail only — does not alter authentication behaviour.
+            # Imported here to keep auth importable without the vault package.
+            from app.vault.services import ACTION_LOGIN, record_audit
+
+            record_audit(ACTION_LOGIN, user, detail="session started")
             flash("Logged in successfully.", "success")
             next_page = request.args.get("next")
             if _is_safe_next(next_page):
@@ -70,6 +75,10 @@ def login():
 @auth_bp.route("/logout", methods=["POST"])
 @login_required
 def logout():
+    # Audit before the session is cleared so the acting user is still known.
+    from app.vault.services import ACTION_LOGOUT, record_audit
+
+    record_audit(ACTION_LOGOUT, current_user, detail="session ended")
     logout_user()
     flash("You have been logged out.", "info")
     return redirect(url_for("auth.login"))

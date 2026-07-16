@@ -85,6 +85,10 @@ class BaseConfig:
     MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE", str(16 * 1024 * 1024)))
     MAX_CONTENT_LENGTH = MAX_FILE_SIZE
 
+    # Display-only storage quota for the dashboard usage bar (default 1 GB).
+    # Purely presentational — uploads are limited per-file, not by total quota.
+    STORAGE_QUOTA_BYTES = int(os.getenv("STORAGE_QUOTA_BYTES", str(1024 ** 3)))
+
     # Allowed extensions (lower-case, no leading dot). The whitelist is the
     # primary control over what may be stored — the on-disk name is randomised.
     ALLOWED_UPLOAD_EXTENSIONS = {

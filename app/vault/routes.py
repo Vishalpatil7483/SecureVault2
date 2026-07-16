@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from flask import (
     abort,
+    current_app,
     flash,
     redirect,
     render_template,
@@ -21,14 +22,17 @@ from flask_login import current_user, login_required
 from app.vault import vault_bp
 from app.vault.crypto import DecryptionError
 from app.vault.services import (
+    AUDIT_ACTIONS,
     FileAccessError,
     FileIntegrityError,
     FileValidationError,
     PhysicalFileMissingError,
     UploadError,
     delete_file,
+    get_activity_page,
     get_decrypted_file,
     get_storage_stats,
+    group_activity_by_day,
     list_files,
     rename_file,
     save_upload,
@@ -58,6 +62,30 @@ def dashboard():
         files=files,
         search_query=search_query,
         stats=stats,
+        storage_quota=current_app.config["STORAGE_QUOTA_BYTES"],
+    )
+
+
+@vault_bp.route("/activity")
+@login_required
+def activity():
+    """Activity Center: paginated, filterable view of the user's audit log."""
+    action = request.args.get("action", "").strip().lower() or None
+    search_query = request.args.get("q", "").strip()
+    page = request.args.get("page", 1, type=int)
+
+    pagination = get_activity_page(
+        current_user, action=action, query=search_query, page=page
+    )
+    groups = group_activity_by_day(pagination.items)
+
+    return render_template(
+        "vault/activity.html",
+        pagination=pagination,
+        groups=groups,
+        actions=AUDIT_ACTIONS,
+        active_action=action if action in AUDIT_ACTIONS else None,
+        search_query=search_query,
     )
 
 

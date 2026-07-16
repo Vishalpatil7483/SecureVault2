@@ -75,6 +75,19 @@ ACTION_UPLOAD = "upload"
 ACTION_DOWNLOAD = "download"
 ACTION_DELETE = "delete"
 ACTION_RENAME = "rename"
+ACTION_LOGIN = "login"
+ACTION_LOGOUT = "logout"
+
+# Whitelist used by the Activity Center filter (prevents arbitrary values
+# reaching the query and keeps the UI honest about what can exist).
+AUDIT_ACTIONS = (
+    ACTION_UPLOAD,
+    ACTION_DOWNLOAD,
+    ACTION_RENAME,
+    ACTION_DELETE,
+    ACTION_LOGIN,
+    ACTION_LOGOUT,
+)
 
 
 def record_audit(
@@ -408,8 +421,10 @@ def get_storage_stats(user: User, recent_limit: int = 5) -> dict:
     stays efficient as the number of files grows.
 
     Returns:
-        A dict with ``total_files`` (int), ``total_bytes`` (int) and ``recent``
-        (the most recently uploaded ``File`` records).
+        A dict with ``total_files``, ``total_bytes``, ``total_uploads``,
+        ``total_audit_events``, ``recent`` (latest File records), ``activity``
+        (latest AuditLog records) and ``upload_trend`` (uploads/day for the
+        last 14 days, oldest first).
     """
     total_files, total_bytes = (
         db.session.query(
@@ -424,8 +439,119 @@ def get_storage_stats(user: User, recent_limit: int = 5) -> dict:
         .limit(recent_limit)
         .all()
     )
+
+    # Lifetime uploads and total audit events, from the append-only audit log.
+    total_uploads = (
+        db.session.query(func.count(AuditLog.id))
+        .filter(AuditLog.user_id == user.id, AuditLog.action == ACTION_UPLOAD)
+        .scalar()
+    )
+    total_audit_events = (
+        db.session.query(func.count(AuditLog.id))
+        .filter(AuditLog.user_id == user.id)
+        .scalar()
+    )
+
+    # Recent activity feed.
+    activity = (
+        AuditLog.query.filter_by(user_id=user.id)
+        .order_by(AuditLog.timestamp.desc())
+        .limit(recent_limit)
+        .all()
+    )
+
+    # Upload trend: uploads per day over the last 14 days (oldest first).
+    # Bucketing in Python keeps this portable across SQLite/Postgres date fns.
+    from datetime import datetime, timedelta, timezone
+
+    today = datetime.now(timezone.utc).date()
+    window_start = today - timedelta(days=13)
+    start_dt = datetime(
+        window_start.year, window_start.month, window_start.day, tzinfo=timezone.utc
+    )
+    rows = (
+        db.session.query(AuditLog.timestamp)
+        .filter(
+            AuditLog.user_id == user.id,
+            AuditLog.action == ACTION_UPLOAD,
+            AuditLog.timestamp >= start_dt,
+        )
+        .all()
+    )
+    buckets = {window_start + timedelta(days=i): 0 for i in range(14)}
+    for (ts,) in rows:
+        day = ts.date()
+        if day in buckets:
+            buckets[day] += 1
+    upload_trend = [
+        {"label": day.strftime("%b %d"), "count": count}
+        for day, count in sorted(buckets.items())
+    ]
+
     return {
         "total_files": int(total_files or 0),
         "total_bytes": int(total_bytes or 0),
+        "total_uploads": int(total_uploads or 0),
+        "total_audit_events": int(total_audit_events or 0),
         "recent": recent,
+        "activity": activity,
+        "upload_trend": upload_trend,
     }
+
+
+def get_activity_page(
+    user: User,
+    *,
+    action: str | None = None,
+    query: str | None = None,
+    page: int = 1,
+    per_page: int = 15,
+):
+    """Return a paginated, filtered page of the user's audit log.
+
+    Args:
+        user: The owner whose activity is listed (always scoped to them).
+        action: Optional action filter; ignored unless in ``AUDIT_ACTIONS``.
+        query: Optional case-insensitive filename substring filter.
+        page / per_page: Standard pagination controls.
+
+    Returns:
+        A Flask-SQLAlchemy ``Pagination`` object (items, page, pages, total…).
+    """
+    stmt = AuditLog.query.filter_by(user_id=user.id)
+
+    if action in AUDIT_ACTIONS:
+        stmt = stmt.filter(AuditLog.action == action)
+
+    if query:
+        term = query.strip()
+        if term:
+            stmt = stmt.filter(AuditLog.filename.ilike(f"%{term}%"))
+
+    return stmt.order_by(AuditLog.timestamp.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+
+
+def group_activity_by_day(entries) -> list[tuple[str, list]]:
+    """Group audit entries into Today / Yesterday / Earlier buckets.
+
+    Entries must already be sorted newest-first; group order is preserved.
+    Returns only non-empty groups as ``(label, entries)`` tuples.
+    """
+    from datetime import datetime, timedelta, timezone
+
+    today = datetime.now(timezone.utc).date()
+    yesterday = today - timedelta(days=1)
+
+    groups: dict[str, list] = {"Today": [], "Yesterday": [], "Earlier": []}
+    for entry in entries:
+        day = entry.timestamp.date()
+        if day == today:
+            groups["Today"].append(entry)
+        elif day == yesterday:
+            groups["Yesterday"].append(entry)
+        else:
+            groups["Earlier"].append(entry)
+
+    return [(label, items) for label, items in groups.items() if items]

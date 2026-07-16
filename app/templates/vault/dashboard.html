@@ -1,193 +1,324 @@
 {% extends "base.html" %}
-{% block title %}Dashboard — SecureVault 2.0{% endblock %}
+{% block title %}Dashboard — SecureVault 2.1{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center g-4">
+<!-- Page heading -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+  <div>
+    <h1 class="h3 mb-1">Dashboard</h1>
+    <p class="text-muted mb-0">Welcome back, {{ current_user.username }} — your files are encrypted with AES-256-GCM.</p>
+  </div>
+  <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#uploadPanel"
+          aria-expanded="false" aria-controls="uploadPanel">
+    <i class="bi bi-cloud-arrow-up me-1"></i>Upload file
+  </button>
+</div>
 
-  <!-- Upload panel -->
-  <div class="col-12 col-lg-10 col-xl-8">
+<!-- Upload panel (collapsible) -->
+<div class="collapse mb-4" id="uploadPanel">
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form action="{{ url_for('vault.upload') }}" method="post"
+            enctype="multipart/form-data" class="row g-2 align-items-center">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="col-12 col-sm">
+          <label for="file" class="form-label visually-hidden">Choose a file</label>
+          <input class="form-control" type="file" id="file" name="file" required>
+        </div>
+        <div class="col-12 col-sm-auto">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-lock me-1"></i>Encrypt &amp; upload
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Statistics cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="card shadow-sm h-100 stat-card">
+      <div class="card-body d-flex align-items-center gap-3">
+        <span class="stat-icon bg-primary-subtle text-primary"><i class="bi bi-file-earmark-lock2"></i></span>
+        <div>
+          <div class="stat-label text-muted">Encrypted files</div>
+          <div class="stat-value">{{ stats.total_files }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card shadow-sm h-100 stat-card">
+      <div class="card-body d-flex align-items-center gap-3">
+        <span class="stat-icon bg-success-subtle text-success"><i class="bi bi-hdd"></i></span>
+        <div>
+          <div class="stat-label text-muted">Storage used</div>
+          <div class="stat-value">{{ stats.total_bytes | filesizeformat_iec }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card shadow-sm h-100 stat-card">
+      <div class="card-body d-flex align-items-center gap-3">
+        <span class="stat-icon bg-info-subtle text-info"><i class="bi bi-cloud-arrow-up"></i></span>
+        <div>
+          <div class="stat-label text-muted">Total uploads</div>
+          <div class="stat-value">{{ stats.total_uploads }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card shadow-sm h-100 stat-card">
+      <div class="card-body d-flex align-items-center gap-3">
+        <span class="stat-icon bg-warning-subtle text-warning"><i class="bi bi-journal-text"></i></span>
+        <div>
+          <div class="stat-label text-muted">Audit events</div>
+          <div class="stat-value">{{ stats.total_audit_events }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <!-- Upload trend chart -->
+  <div class="col-12 col-lg-7">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-graph-up me-1 text-primary"></i>Upload trend (last 14 days)
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap">
+          <canvas id="uploadTrendChart" aria-label="Uploads per day for the last 14 days" role="img"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Storage usage + recent uploads -->
+  <div class="col-12 col-lg-5 d-flex flex-column gap-4">
     <div class="card shadow-sm">
       <div class="card-body">
-        <h1 class="h4 card-title mb-1">Your Vault</h1>
-        <p class="text-muted mb-4">Upload a file to store it securely.</p>
-
-        <form action="{{ url_for('vault.upload') }}" method="post"
-              enctype="multipart/form-data" class="row g-2 align-items-center">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <div class="col-12 col-sm">
-            <label for="file" class="form-label visually-hidden">Choose a file</label>
-            <input class="form-control" type="file" id="file" name="file" required>
-          </div>
-          <div class="col-12 col-sm-auto">
-            <button type="submit" class="btn btn-primary w-100">Upload</button>
-          </div>
-        </form>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="fw-semibold"><i class="bi bi-hdd-stack me-1 text-success"></i>Storage usage</span>
+          <span class="text-muted small">{{ stats.total_bytes | filesizeformat_iec }} of {{ storage_quota | filesizeformat_iec }}</span>
+        </div>
+        {% set pct = ((stats.total_bytes / storage_quota * 100) if storage_quota else 0) | round(1) %}
+        <div class="progress storage-progress" role="progressbar" aria-label="Storage usage"
+             aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-bar {{ 'bg-danger' if pct > 90 else ('bg-warning' if pct > 70 else 'bg-success') }}"
+               data-width-pct="{{ pct }}"></div>
+        </div>
+        <div class="text-muted small mt-2">{{ pct }}% used</div>
       </div>
     </div>
-  </div>
 
-  <!-- Storage summary -->
-  <div class="col-12 col-lg-10 col-xl-8">
-    <div class="row g-3">
-      <div class="col-6 col-md-4">
-        <div class="card shadow-sm h-100 stat-card">
-          <div class="card-body">
-            <div class="stat-label text-muted">Total files</div>
-            <div class="stat-value">{{ stats.total_files }}</div>
-          </div>
-        </div>
+    <div class="card shadow-sm flex-grow-1">
+      <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-clock-history me-1 text-info"></i>Recent uploads
       </div>
-      <div class="col-6 col-md-4">
-        <div class="card shadow-sm h-100 stat-card">
-          <div class="card-body">
-            <div class="stat-label text-muted">Storage used</div>
-            <div class="stat-value">{{ stats.total_bytes | filesizeformat_iec }}</div>
-          </div>
-        </div>
-      </div>
-      <div class="col-12 col-md-4">
-        <div class="card shadow-sm h-100 stat-card">
-          <div class="card-body">
-            <div class="stat-label text-muted">Encryption</div>
-            <div class="stat-value">AES-256</div>
-            <div class="small text-muted">GCM · every file</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  {% if stats.recent %}
-  <!-- Recently uploaded -->
-  <div class="col-12 col-lg-10 col-xl-8">
-    <div class="card shadow-sm">
-      <div class="card-header bg-white fw-semibold">Recently uploaded</div>
-      <ul class="list-group list-group-flush">
-        {% for file in stats.recent %}
-          <li class="list-group-item d-flex justify-content-between align-items-center gap-3">
-            <span class="text-break">{{ file.original_filename }}</span>
-            <span class="text-nowrap text-muted small">
-              {{ file.file_size | filesizeformat_iec }} ·
-              {{ file.upload_timestamp.strftime('%Y-%m-%d %H:%M') }}
-            </span>
-          </li>
-        {% endfor %}
-      </ul>
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- Files list -->
-  <div class="col-12 col-lg-10 col-xl-8">
-    <div class="card shadow-sm">
-      <div class="card-header bg-white">
-        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
-          <span class="fw-semibold">Uploaded files <span class="badge text-bg-secondary ms-1">{{ files|length }}</span></span>
-
-          <form action="{{ url_for('vault.dashboard') }}" method="get" class="d-flex" role="search">
-            <input class="form-control form-control-sm me-2" type="search" name="q"
-                   value="{{ search_query }}" placeholder="Search filenames"
-                   aria-label="Search filenames">
-            <button class="btn btn-outline-secondary btn-sm" type="submit">Search</button>
-            {% if search_query %}
-              <a class="btn btn-link btn-sm" href="{{ url_for('vault.dashboard') }}">Clear</a>
-            {% endif %}
-          </form>
-        </div>
-      </div>
-
-      {% if files %}
-        <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
-            <thead class="table-light">
-              <tr>
-                <th scope="col">Filename</th>
-                <th scope="col" class="text-end">Size</th>
-                <th scope="col">Uploaded</th>
-                <th scope="col" class="text-end">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for file in files %}
-                <tr>
-                  <td class="text-break">{{ file.original_filename }}</td>
-                  <td class="text-end text-nowrap">{{ file.file_size | filesizeformat_iec }}</td>
-                  <td class="text-nowrap">{{ file.upload_timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
-                  <td class="text-end text-nowrap">
-                    <a class="btn btn-sm btn-outline-primary"
-                       href="{{ url_for('vault.download', file_id=file.id) }}">Download</a>
-                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                            data-bs-toggle="modal" data-bs-target="#rename-{{ file.id }}">Rename</button>
-                    <button type="button" class="btn btn-sm btn-outline-danger"
-                            data-bs-toggle="modal" data-bs-target="#delete-{{ file.id }}">Delete</button>
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Per-file modals (placed outside the table for valid markup) -->
-        {% for file in files %}
-          <!-- Rename modal -->
-          <div class="modal fade" id="rename-{{ file.id }}" tabindex="-1"
-               aria-labelledby="rename-label-{{ file.id }}" aria-hidden="true">
-            <div class="modal-dialog">
-              <form class="modal-content" action="{{ url_for('vault.rename', file_id=file.id) }}" method="post">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-header">
-                  <h5 class="modal-title" id="rename-label-{{ file.id }}">Rename file</h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                  <label for="new-name-{{ file.id }}" class="form-label">New filename</label>
-                  <input type="text" class="form-control" id="new-name-{{ file.id }}"
-                         name="new_name" value="{{ file.original_filename }}" maxlength="255" required>
-                </div>
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                  <button type="submit" class="btn btn-primary">Save</button>
-                </div>
-              </form>
-            </div>
-          </div>
-
-          <!-- Delete confirmation modal -->
-          <div class="modal fade" id="delete-{{ file.id }}" tabindex="-1"
-               aria-labelledby="delete-label-{{ file.id }}" aria-hidden="true">
-            <div class="modal-dialog">
-              <form class="modal-content" action="{{ url_for('vault.delete', file_id=file.id) }}" method="post">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-header">
-                  <h5 class="modal-title" id="delete-label-{{ file.id }}">Delete file</h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                  Delete <strong class="text-break">{{ file.original_filename }}</strong>? This cannot be undone.
-                </div>
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                  <button type="submit" class="btn btn-danger">Delete</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        {% endfor %}
-
+      {% if stats.recent %}
+        <ul class="list-group list-group-flush">
+          {% for file in stats.recent %}
+            <li class="list-group-item d-flex justify-content-between align-items-center gap-3">
+              <span class="text-break"><i class="bi bi-file-earmark-lock2 text-muted me-1"></i>{{ file.original_filename }}</span>
+              <span class="text-nowrap text-muted small">
+                {{ file.file_size | filesizeformat_iec }} · {{ file.upload_timestamp.strftime('%b %d, %H:%M') }}
+              </span>
+            </li>
+          {% endfor %}
+        </ul>
       {% else %}
-        <div class="card-body text-center text-muted empty-state">
-          <div class="empty-icon mb-2">🗂️</div>
-          {% if search_query %}
-            <p class="mb-0">No files match &ldquo;{{ search_query }}&rdquo;.</p>
-            <a class="btn btn-outline-secondary btn-sm mt-3" href="{{ url_for('vault.dashboard') }}">Clear search</a>
-          {% else %}
-            <p class="mb-1 fw-semibold">Your vault is empty</p>
-            <p class="mb-0">Upload your first file using the panel above.</p>
-          {% endif %}
+        <div class="card-body text-center text-muted py-4">
+          <i class="bi bi-inbox d-block mb-1 fs-4 opacity-50"></i>
+          No uploads yet.
         </div>
       {% endif %}
     </div>
   </div>
-
 </div>
+
+<!-- Recent activity -->
+<div class="row g-4 mb-4">
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="bi bi-activity me-1 text-warning"></i>Recent activity</span>
+        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('vault.activity') }}">
+          View all<i class="bi bi-arrow-right ms-1"></i>
+        </a>
+      </div>
+      {% if stats.activity %}
+        <ul class="list-group list-group-flush">
+          {% for entry in stats.activity %}
+            {% set meta = {
+              'upload':   ('cloud-arrow-up',  'primary'),
+              'download': ('cloud-arrow-down','success'),
+              'rename':   ('pencil-square',   'info'),
+              'delete':   ('trash',           'danger'),
+            }.get(entry.action, ('dot', 'secondary')) %}
+            <li class="list-group-item d-flex align-items-center gap-3">
+              <span class="activity-icon bg-{{ meta[1] }}-subtle text-{{ meta[1] }}">
+                <i class="bi bi-{{ meta[0] }}"></i>
+              </span>
+              <div class="flex-grow-1 min-width-0">
+                <span class="text-capitalize fw-semibold">{{ entry.action }}</span>
+                {% if entry.filename %}<span class="text-break">— {{ entry.filename }}</span>{% endif %}
+                {% if not entry.success %}<span class="badge text-bg-danger ms-1">failed</span>{% endif %}
+                {% if entry.detail %}<div class="text-muted small text-break">{{ entry.detail }}</div>{% endif %}
+              </div>
+              <span class="text-muted small text-nowrap">{{ entry.timestamp.strftime('%b %d, %H:%M') }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="card-body text-center text-muted empty-state">
+          <i class="bi bi-journal d-block empty-icon mb-2"></i>
+          <p class="mb-0">No activity recorded yet.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Files table -->
+<div class="card shadow-sm">
+  <div class="card-header bg-white">
+    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+      <span class="fw-semibold">
+        <i class="bi bi-folder2-open me-1 text-primary"></i>Your files
+        <span class="badge text-bg-secondary ms-1">{{ files|length }}</span>
+      </span>
+
+      <form action="{{ url_for('vault.dashboard') }}" method="get" class="d-flex" role="search">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+          <input class="form-control" type="search" name="q"
+                 value="{{ search_query }}" placeholder="Search filenames"
+                 aria-label="Search filenames">
+          <button class="btn btn-outline-secondary" type="submit">Search</button>
+          {% if search_query %}
+            <a class="btn btn-outline-secondary" href="{{ url_for('vault.dashboard') }}"
+               aria-label="Clear search"><i class="bi bi-x-lg"></i></a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if files %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th scope="col">Filename</th>
+            <th scope="col" class="text-end">Size</th>
+            <th scope="col">Uploaded</th>
+            <th scope="col" class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for file in files %}
+            <tr>
+              <td class="text-break filename-cell">
+                <i class="bi bi-file-earmark-lock2 text-muted me-1"></i>{{ file.original_filename }}
+              </td>
+              <td class="text-end text-nowrap">{{ file.file_size | filesizeformat_iec }}</td>
+              <td class="text-nowrap">{{ file.upload_timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td class="text-end text-nowrap">
+                <a class="btn btn-sm btn-outline-primary" title="Download"
+                   href="{{ url_for('vault.download', file_id=file.id) }}">
+                  <i class="bi bi-download"></i><span class="d-none d-md-inline ms-1">Download</span>
+                </a>
+                <button type="button" class="btn btn-sm btn-outline-secondary" title="Rename"
+                        data-bs-toggle="modal" data-bs-target="#rename-{{ file.id }}">
+                  <i class="bi bi-pencil"></i><span class="d-none d-md-inline ms-1">Rename</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger" title="Delete"
+                        data-bs-toggle="modal" data-bs-target="#delete-{{ file.id }}">
+                  <i class="bi bi-trash"></i><span class="d-none d-md-inline ms-1">Delete</span>
+                </button>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Per-file modals (placed outside the table for valid markup) -->
+    {% for file in files %}
+      <!-- Rename modal -->
+      <div class="modal fade" id="rename-{{ file.id }}" tabindex="-1"
+           aria-labelledby="rename-label-{{ file.id }}" aria-hidden="true">
+        <div class="modal-dialog">
+          <form class="modal-content" action="{{ url_for('vault.rename', file_id=file.id) }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal-header">
+              <h5 class="modal-title" id="rename-label-{{ file.id }}">
+                <i class="bi bi-pencil-square me-1"></i>Rename file
+              </h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <label for="new-name-{{ file.id }}" class="form-label">New filename</label>
+              <input type="text" class="form-control" id="new-name-{{ file.id }}"
+                     name="new_name" value="{{ file.original_filename }}" maxlength="255" required>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Delete confirmation modal -->
+      <div class="modal fade" id="delete-{{ file.id }}" tabindex="-1"
+           aria-labelledby="delete-label-{{ file.id }}" aria-hidden="true">
+        <div class="modal-dialog">
+          <form class="modal-content" action="{{ url_for('vault.delete', file_id=file.id) }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal-header">
+              <h5 class="modal-title" id="delete-label-{{ file.id }}">
+                <i class="bi bi-trash me-1 text-danger"></i>Delete file
+              </h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              Delete <strong class="text-break">{{ file.original_filename }}</strong>? This cannot be undone.
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-danger">Delete</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+
+  {% else %}
+    <div class="card-body text-center text-muted empty-state">
+      <i class="bi bi-folder2-open d-block empty-icon mb-2"></i>
+      {% if search_query %}
+        <p class="mb-0">No files match &ldquo;{{ search_query }}&rdquo;.</p>
+        <a class="btn btn-outline-secondary btn-sm mt-3" href="{{ url_for('vault.dashboard') }}">
+          <i class="bi bi-x-lg me-1"></i>Clear search
+        </a>
+      {% else %}
+        <p class="mb-1 fw-semibold">Your vault is empty</p>
+        <p class="mb-0">Use the <strong>Upload file</strong> button above to store your first encrypted file.</p>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+
+<!-- CSP-safe data island: chart data as JSON, consumed by app.js -->
+<script type="application/json" id="upload-trend-data">{{ stats.upload_trend | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/chartjs/chart.umd.min.js') }}"></script>
 {% endblock %}

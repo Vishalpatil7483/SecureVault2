@@ -1,15 +1,45 @@
-/* SecureVault 2.0 — small design touches on top of Bootstrap 5. */
+/* SecureVault 2.1 — modern SaaS styling on top of Bootstrap 5. */
 
 :root {
   --sv-brand: #0d6efd;
+  --sv-radius: 0.75rem;
 }
 
 body {
   min-height: 100vh;
+  font-size: 0.95rem;
+  -webkit-font-smoothing: antialiased;
 }
 
-.navbar-brand {
+h1, h2, h3, h4, h5, .card-title {
+  letter-spacing: -0.01em;
+}
+
+/* Navbar */
+.sv-navbar .navbar-brand {
   letter-spacing: 0.2px;
+  font-size: 1.15rem;
+}
+
+.sv-navbar .nav-link {
+  border-radius: 0.5rem;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+.sv-navbar .nav-link:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Cards */
+.card {
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: var(--sv-radius);
+}
+
+.card-header {
+  border-top-left-radius: var(--sv-radius) !important;
+  border-top-right-radius: var(--sv-radius) !important;
 }
 
 /* Landing hero */
@@ -21,17 +51,38 @@ body {
   max-width: 40rem;
 }
 
-/* Stat cards on the dashboard */
+/* Stat cards */
+.stat-card {
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important;
+}
+
 .stat-card .stat-value {
-  font-size: 1.75rem;
-  font-weight: 600;
+  font-size: 1.65rem;
+  font-weight: 700;
   line-height: 1.1;
 }
 
 .stat-card .stat-label {
   text-transform: uppercase;
-  letter-spacing: 0.4px;
-  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.stat-card .stat-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.65rem;
+  font-size: 1.25rem;
+  flex-shrink: 0;
 }
 
 /* Feature icons on the landing page */
@@ -45,6 +96,32 @@ body {
   font-size: 1.25rem;
 }
 
+/* Activity feed */
+.activity-icon {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+/* Tables */
+.table > :not(caption) > * > * {
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+}
+
+.table thead th {
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color);
+}
+
 /* Generic empty-state block */
 .empty-state {
   padding: 3rem 1rem;
@@ -52,10 +129,31 @@ body {
 
 .empty-state .empty-icon {
   font-size: 2.5rem;
-  opacity: 0.5;
+  opacity: 0.45;
+}
+
+/* Storage progress */
+.storage-progress {
+  height: 0.5rem;
+  border-radius: 999px;
+}
+
+/* Chart container keeps the canvas responsive without inline styles */
+.chart-wrap {
+  position: relative;
+  height: 230px;
 }
 
 /* Keep long filenames from breaking table layout */
 .filename-cell {
   max-width: 22rem;
+}
+
+@media (max-width: 575.98px) {
+  .stat-card .stat-value {
+    font-size: 1.3rem;
+  }
+  .hero {
+    padding: 2.5rem 0 2rem;
+  }
 }
