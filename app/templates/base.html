@@ -3,9 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}SecureVault 2.1{% endblock %}</title>
+  <title>{% block title %}SecureVault 2.3{% endblock %}</title>
   <!-- All assets are self-hosted (no CDNs) so the strict Content-Security-
-       Policy (default-src 'self') stays intact. -->
+       Policy (default-src 'self') stays intact. theme.js runs before first
+       paint to apply the saved/system theme without a flash. -->
+  <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap/bootstrap.min.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-icons/bootstrap-icons.min.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
@@ -43,10 +45,16 @@
               </li>
             {% endif %}
           </ul>
-          <ul class="navbar-nav align-items-lg-center">
+          <ul class="navbar-nav align-items-lg-center gap-lg-1">
+            <li class="nav-item">
+              <button type="button" id="theme-toggle" class="btn btn-outline-light btn-sm"
+                      aria-label="Toggle dark mode" title="Toggle dark mode">
+                <i class="bi bi-moon-stars" id="theme-toggle-icon"></i>
+              </button>
+            </li>
             {% if current_user.is_authenticated %}
               <li class="nav-item">
-                <span class="navbar-text me-lg-3 d-flex align-items-center gap-1">
+                <span class="navbar-text mx-lg-2 d-flex align-items-center gap-1">
                   <i class="bi bi-person-circle"></i>
                   <strong>{{ current_user.username }}</strong>
                 </span>
@@ -78,32 +86,21 @@
   </header>
 
   <main class="container py-4 flex-grow-1">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          {% set alert_class = {
-            'success': 'success', 'danger': 'danger', 'warning': 'warning',
-            'info': 'info', 'message': 'secondary'
-          }.get(category, 'secondary') %}
-          {% set alert_icon = {
-            'success': 'check-circle', 'danger': 'exclamation-triangle',
-            'warning': 'exclamation-circle', 'info': 'info-circle'
-          }.get(category, 'info-circle') %}
-          <div class="alert alert-{{ alert_class }} alert-dismissible fade show d-flex align-items-center" role="alert">
-            <i class="bi bi-{{ alert_icon }} me-2"></i>
-            <div>{{ message }}</div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="py-3 mt-auto border-top bg-white">
+  <!-- Toast notifications (flash messages rendered as data, shown by app.js) -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container" aria-live="polite" aria-atomic="true">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="sv-flash d-none" data-category="{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+  </div>
+
+  <footer class="py-3 mt-auto border-top bg-body">
     <div class="container d-flex justify-content-between align-items-center text-muted small">
-      <span><i class="bi bi-shield-lock me-1"></i>SecureVault 2.1</span>
+      <span><i class="bi bi-shield-lock me-1"></i>SecureVault 2.3</span>
       <span>AES-256-GCM encrypted storage</span>
     </div>
   </footer>

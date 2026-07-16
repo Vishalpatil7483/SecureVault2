@@ -19,14 +19,18 @@
   <div class="card shadow-sm">
     <div class="card-body">
       <form action="{{ url_for('vault.upload') }}" method="post"
-            enctype="multipart/form-data" class="row g-2 align-items-center">
+            enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="col-12 col-sm">
-          <label for="file" class="form-label visually-hidden">Choose a file</label>
-          <input class="form-control" type="file" id="file" name="file" required>
+        <div class="dropzone mb-3" id="dropzone">
+          <input type="file" id="file" name="file" required
+                 aria-label="Choose a file or drag it here">
+          <i class="bi bi-cloud-arrow-up dz-icon" aria-hidden="true"></i>
+          <div class="fw-semibold">Drag &amp; drop a file here</div>
+          <div class="small">or click to browse</div>
+          <div class="small fw-semibold text-success mt-1" id="dropzone-filename"></div>
         </div>
-        <div class="col-12 col-sm-auto">
-          <button type="submit" class="btn btn-primary w-100">
+        <div class="d-grid d-sm-flex justify-content-sm-end">
+          <button type="submit" class="btn btn-primary">
             <i class="bi bi-lock me-1"></i>Encrypt &amp; upload
           </button>
         </div>
@@ -87,7 +91,7 @@
   <!-- Upload trend chart -->
   <div class="col-12 col-lg-7">
     <div class="card shadow-sm h-100">
-      <div class="card-header bg-white fw-semibold">
+      <div class="card-header bg-body fw-semibold">
         <i class="bi bi-graph-up me-1 text-primary"></i>Upload trend (last 14 days)
       </div>
       <div class="card-body">
@@ -117,14 +121,14 @@
     </div>
 
     <div class="card shadow-sm flex-grow-1">
-      <div class="card-header bg-white fw-semibold">
+      <div class="card-header bg-body fw-semibold">
         <i class="bi bi-clock-history me-1 text-info"></i>Recent uploads
       </div>
       {% if stats.recent %}
         <ul class="list-group list-group-flush">
           {% for file in stats.recent %}
             <li class="list-group-item d-flex justify-content-between align-items-center gap-3">
-              <span class="text-break"><i class="bi bi-file-earmark-lock2 text-muted me-1"></i>{{ file.original_filename }}</span>
+              <span class="text-break">{{ file.file_extension | file_icon }}{{ file.original_filename }}</span>
               <span class="text-nowrap text-muted small">
                 {{ file.file_size | filesizeformat_iec }} · {{ file.upload_timestamp.strftime('%b %d, %H:%M') }}
               </span>
@@ -133,8 +137,9 @@
         </ul>
       {% else %}
         <div class="card-body text-center text-muted py-4">
-          <i class="bi bi-inbox d-block mb-1 fs-4 opacity-50"></i>
-          No uploads yet.
+          <span class="empty-ring"><i class="bi bi-inbox empty-icon"></i></span>
+          <p class="mb-0 fw-semibold">No uploads yet</p>
+          <p class="mb-0 small">Your latest files will appear here.</p>
         </div>
       {% endif %}
     </div>
@@ -145,7 +150,7 @@
 <div class="row g-4 mb-4">
   <div class="col-12">
     <div class="card shadow-sm">
-      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <div class="card-header bg-body d-flex justify-content-between align-items-center">
         <span class="fw-semibold"><i class="bi bi-activity me-1 text-warning"></i>Recent activity</span>
         <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('vault.activity') }}">
           View all<i class="bi bi-arrow-right ms-1"></i>
@@ -176,8 +181,9 @@
         </ul>
       {% else %}
         <div class="card-body text-center text-muted empty-state">
-          <i class="bi bi-journal d-block empty-icon mb-2"></i>
-          <p class="mb-0">No activity recorded yet.</p>
+          <span class="empty-ring"><i class="bi bi-journal empty-icon"></i></span>
+          <p class="mb-1 fw-semibold">No activity yet</p>
+          <p class="mb-0 small">Uploads, downloads and other actions will appear here.</p>
         </div>
       {% endif %}
     </div>
@@ -186,7 +192,7 @@
 
 <!-- Files table -->
 <div class="card shadow-sm">
-  <div class="card-header bg-white">
+  <div class="card-header bg-body">
     <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
       <span class="fw-semibold">
         <i class="bi bi-folder2-open me-1 text-primary"></i>Your files
@@ -195,7 +201,7 @@
 
       <form action="{{ url_for('vault.dashboard') }}" method="get" class="d-flex" role="search">
         <div class="input-group input-group-sm">
-          <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+          <span class="input-group-text bg-body"><i class="bi bi-search"></i></span>
           <input class="form-control" type="search" name="q"
                  value="{{ search_query }}" placeholder="Search filenames"
                  aria-label="Search filenames">
@@ -224,7 +230,7 @@
           {% for file in files %}
             <tr>
               <td class="text-break filename-cell">
-                <i class="bi bi-file-earmark-lock2 text-muted me-1"></i>{{ file.original_filename }}
+                {{ file.file_extension | file_icon }}{{ file.original_filename }}
               </td>
               <td class="text-end text-nowrap">{{ file.file_size | filesizeformat_iec }}</td>
               <td class="text-nowrap">{{ file.upload_timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
@@ -301,7 +307,7 @@
 
   {% else %}
     <div class="card-body text-center text-muted empty-state">
-      <i class="bi bi-folder2-open d-block empty-icon mb-2"></i>
+      <span class="empty-ring"><i class="bi bi-folder2-open empty-icon"></i></span>
       {% if search_query %}
         <p class="mb-0">No files match &ldquo;{{ search_query }}&rdquo;.</p>
         <a class="btn btn-outline-secondary btn-sm mt-3" href="{{ url_for('vault.dashboard') }}">

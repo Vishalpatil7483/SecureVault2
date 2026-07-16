@@ -18,6 +18,7 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
+from markupsafe import Markup
 
 from app.vault import vault_bp
 from app.vault.crypto import DecryptionError
@@ -48,6 +49,34 @@ def filesizeformat_iec(num_bytes: int) -> str:
             return f"{size:.0f} {unit}" if unit == "B" else f"{size:.1f} {unit}"
         size /= 1024
     return f"{size:.1f} TB"
+
+
+# Bootstrap Icon name + contextual colour per file extension (display only).
+_FILE_TYPE_ICONS = {
+    "pdf": ("file-earmark-pdf", "danger"),
+    "png": ("file-earmark-image", "success"),
+    "jpg": ("file-earmark-image", "success"),
+    "jpeg": ("file-earmark-image", "success"),
+    "gif": ("file-earmark-image", "success"),
+    "txt": ("file-earmark-text", "secondary"),
+    "md": ("file-earmark-text", "secondary"),
+    "csv": ("file-earmark-spreadsheet", "success"),
+    "doc": ("file-earmark-word", "primary"),
+    "docx": ("file-earmark-word", "primary"),
+    "xls": ("file-earmark-spreadsheet", "success"),
+    "xlsx": ("file-earmark-spreadsheet", "success"),
+    "ppt": ("file-earmark-slides", "warning"),
+    "pptx": ("file-earmark-slides", "warning"),
+    "zip": ("file-earmark-zip", "warning"),
+}
+_UNKNOWN_FILE_ICON = ("file-earmark", "secondary")
+
+
+@vault_bp.app_template_filter("file_icon")
+def file_icon(extension: str) -> str:
+    """Return an inline Bootstrap Icon <i> tag for a file extension."""
+    icon, color = _FILE_TYPE_ICONS.get((extension or "").lower(), _UNKNOWN_FILE_ICON)
+    return Markup(f'<i class="bi bi-{icon} text-{color} me-1" aria-hidden="true"></i>')
 
 
 @vault_bp.route("/dashboard")

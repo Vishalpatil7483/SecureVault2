@@ -1,4 +1,6 @@
-/* SecureVault 2.1 — modern SaaS styling on top of Bootstrap 5. */
+/* SecureVault 2.3 — modern SaaS styling on top of Bootstrap 5.
+   Colours use Bootstrap CSS variables so both light and dark themes
+   (data-bs-theme) stay visually consistent without duplicate rules. */
 
 :root {
   --sv-brand: #0d6efd;
@@ -15,7 +17,7 @@ h1, h2, h3, h4, h5, .card-title {
   letter-spacing: -0.01em;
 }
 
-/* Navbar */
+/* Navbar (stays dark in both themes for brand consistency) */
 .sv-navbar .navbar-brand {
   letter-spacing: 0.2px;
   font-size: 1.15rem;
@@ -33,13 +35,14 @@ h1, h2, h3, h4, h5, .card-title {
 
 /* Cards */
 .card {
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--bs-border-color-translucent);
   border-radius: var(--sv-radius);
 }
 
 .card-header {
   border-top-left-radius: var(--sv-radius) !important;
   border-top-right-radius: var(--sv-radius) !important;
+  background-color: var(--bs-body-bg);
 }
 
 /* Landing hero */
@@ -108,18 +111,94 @@ h1, h2, h3, h4, h5, .card-title {
   flex-shrink: 0;
 }
 
-/* Tables */
-.table > :not(caption) > * > * {
-  padding-top: 0.65rem;
-  padding-bottom: 0.65rem;
+/* Tables: sticky headers, hover, spacing, responsive scroll */
+.table-responsive {
+  max-height: 60vh;
 }
 
 .table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: var(--bs-tertiary-bg);
   text-transform: uppercase;
   letter-spacing: 0.4px;
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--bs-secondary-color);
+}
+
+.table > :not(caption) > * > * {
+  padding-top: 0.7rem;
+  padding-bottom: 0.7rem;
+}
+
+.table-hover > tbody > tr {
+  transition: background-color 0.1s ease;
+}
+
+/* Action buttons in tables */
+.table .btn-sm {
+  --bs-btn-padding-y: 0.3rem;
+  --bs-btn-padding-x: 0.55rem;
+}
+
+/* Forms: focus states and floating-label polish */
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--sv-brand);
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+.form-floating > label {
+  color: var(--bs-secondary-color);
+}
+
+.invalid-feedback {
+  display: block;
+}
+
+/* Drag & drop upload zone */
+.dropzone {
+  position: relative;
+  border: 2px dashed var(--bs-border-color);
+  border-radius: var(--sv-radius);
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--bs-secondary-color);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+  cursor: pointer;
+}
+
+.dropzone:hover {
+  border-color: var(--sv-brand);
+}
+
+.dropzone.dragover {
+  border-color: var(--sv-brand);
+  background-color: rgba(13, 110, 253, 0.08);
+  color: var(--sv-brand);
+}
+
+.dropzone.has-file {
+  border-style: solid;
+  border-color: var(--bs-success);
+}
+
+.dropzone .dz-icon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+/* The real input covers the whole zone: native click + keyboard + drop. */
+.dropzone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
 }
 
 /* Generic empty-state block */
@@ -128,8 +207,19 @@ h1, h2, h3, h4, h5, .card-title {
 }
 
 .empty-state .empty-icon {
-  font-size: 2.5rem;
+  font-size: 2.75rem;
   opacity: 0.45;
+}
+
+.empty-state .empty-ring {
+  width: 5.5rem;
+  height: 5.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: var(--bs-tertiary-bg);
+  margin-bottom: 0.75rem;
 }
 
 /* Storage progress */
@@ -149,11 +239,19 @@ h1, h2, h3, h4, h5, .card-title {
   max-width: 22rem;
 }
 
+/* Toasts above modals' backdrop but below modals themselves */
+.toast-container {
+  z-index: 1090;
+}
+
 @media (max-width: 575.98px) {
   .stat-card .stat-value {
     font-size: 1.3rem;
   }
   .hero {
     padding: 2.5rem 0 2rem;
+  }
+  .dropzone {
+    padding: 1.25rem 0.75rem;
   }
 }

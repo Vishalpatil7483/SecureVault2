@@ -1,26 +1,31 @@
 {% extends "base.html" %}
-{% block title %}Log in — SecureVault 2.0{% endblock %}
+{% block title %}Log in — SecureVault 2.3{% endblock %}
 {% block content %}
 <div class="row justify-content-center">
   <div class="col-12 col-sm-10 col-md-6 col-lg-5">
     <div class="card shadow-sm">
       <div class="card-body p-4">
-        <h1 class="h4 mb-4 text-center">Log in</h1>
+        <div class="text-center mb-4">
+          <i class="bi bi-shield-lock-fill text-primary fs-2"></i>
+          <h1 class="h4 mt-2 mb-0">Log in</h1>
+        </div>
 
         <form method="post" action="{{ url_for('auth.login') }}" novalidate>
           {{ form.hidden_tag() }}
 
-          <div class="mb-3">
-            {{ form.username.label(class="form-label") }}
-            {{ form.username(class="form-control" ~ (" is-invalid" if form.username.errors else ""), autocomplete="username") }}
+          <div class="form-floating mb-3">
+            {{ form.username(class="form-control" ~ (" is-invalid" if form.username.errors else ""),
+                             autocomplete="username", placeholder="Username", id="login-username") }}
+            <label for="login-username">Username</label>
             {% for error in form.username.errors %}
               <div class="invalid-feedback">{{ error }}</div>
             {% endfor %}
           </div>
 
-          <div class="mb-3">
-            {{ form.password.label(class="form-label") }}
-            {{ form.password(class="form-control" ~ (" is-invalid" if form.password.errors else ""), autocomplete="current-password") }}
+          <div class="form-floating mb-3">
+            {{ form.password(class="form-control" ~ (" is-invalid" if form.password.errors else ""),
+                             autocomplete="current-password", placeholder="Password", id="login-password") }}
+            <label for="login-password">Password</label>
             {% for error in form.password.errors %}
               <div class="invalid-feedback">{{ error }}</div>
             {% endfor %}
